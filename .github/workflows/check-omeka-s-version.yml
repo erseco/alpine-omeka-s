@@ -26,18 +26,12 @@ jobs:
             grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | \
             grep -E '^v4\.[0-9]+\.[0-9]+$|^v[5-9][0-9]*\.' | \
             sort -V)
+
           echo "Filtered and sorted Omeka S tags:"
           echo "$OMEKA_TAGS"
 
-          echo "omeka_tags=$OMEKA_TAGS" >> $GITHUB_ENV
-
-      - name: Get existing tags
-        id: get-existing-tags
-        run: |
-          git fetch --tags
-          EXISTING_TAGS=$(git tag -l)
-          EXISTING_TAGS_FORMATTED=$(echo "$EXISTING_TAGS" | tr '\n' ' ')
-          echo "existing_tags=$EXISTING_TAGS_FORMATTED" >> $GITHUB_ENV
+          OMEKA_TAGS_FORMATTED=$(echo "$OMEKA_TAGS" | tr '\n' ' ')
+          echo "omeka_tags=$OMEKA_TAGS_FORMATTED" >> $GITHUB_ENV
 
       - name: Process missing tags
         env:
