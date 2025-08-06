@@ -34,6 +34,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
             type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=beta,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=develop,enable=${{ github.ref == 'refs/heads/main' }}
 
       # Step 3: Set up QEMU for multi-platform builds
       - name: Set up QEMU
@@ -87,7 +88,7 @@ jobs:
             VERSION=${GITHUB_REF#refs/tags/}
             echo "version=${VERSION}" >> $GITHUB_OUTPUT
           else
-            echo "version=main" >> $GITHUB_OUTPUT
+            echo "version=develop" >> $GITHUB_OUTPUT
           fi
 
       # Step 8: Test build (for PRs)
