@@ -1,6 +1,5 @@
 #!/bin/sh
 set -eu
-set -x
 
 # Check for required tools
 if ! command -v jq >/dev/null 2>&1; then
@@ -132,7 +131,7 @@ install_omeka() {
 
 # --- Main Execution ---
 
-echo "=== Entrypoint start ==="
+echo "=== Omeka S Entrypoint start ==="
 
 [ -n "${DB_HOST:-}" ] && check_db_availability "$DB_HOST" "${DB_PORT:-3306}"
 
@@ -143,6 +142,5 @@ install_items_from_urls "modules" "OMEKA_MODULES"
 
 install_omeka
 
-echo "=== Entrypoint completed ==="
-set +x
+echo "=== Omeka S Entrypoint completed ==="
 exec "$@"
