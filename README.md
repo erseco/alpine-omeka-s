@@ -13,7 +13,7 @@ Repository: https://github.com/erseco/alpine-omeka-s
 - **Lightweight:** Built on the `erseco/alpine-php-webserver` base image for a minimal footprint (+/- 70MB).
 - **Performant:** Uses PHP-FPM with an `ondemand` process manager to optimize resource usage.
 - **Secure:** Services run under a non-privileged user (`nobody`). Logs are directed to the container's STDOUT.
-- **Multi-Arch Support:** `riscv64`, `amd64`, `arm/v6`, `arm/v7`, `arm64`, `ppc64le`, `s390x`.
+- **Multi-Arch Support:** `amd64`, `arm/v6`, `arm/v7`, `arm64`, `ppc64le`, `s390x`.
 - **Configurable:** Easily configure the container using environment variables.
 - **Extensible:** Automatically install themes and modules on startup.
 - **Simple & Transparent:** Follows the KISS principle for easy understanding and customization.
