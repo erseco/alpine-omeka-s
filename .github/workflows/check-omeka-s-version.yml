@@ -2,7 +2,7 @@ name: Sync Omeka-S Tags
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Daily at midnight    
+    - cron: '0 0 * * *' # Daily at midnight
   workflow_dispatch: # Allows manually triggering
 
 jobs:
@@ -16,53 +16,48 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get Omeka S tags
+      - name: Get Omeka S tags >= v4.0.0
         id: get-omeka-tags
         run: |
           echo "Fetching Omeka S tags from GitHub API..."
-          OMEKA_TAGS=$(curl -s -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/omeka/omeka-s/tags" | jq -r '.[].name')
-          # Convert newlines to spaces for proper shell iteration
-          OMEKA_TAGS_FORMATTED=$(echo "$OMEKA_TAGS" | tr '\n' ' ')
-          echo "omeka_tags=$OMEKA_TAGS_FORMATTED" >> $GITHUB_ENV
+          OMEKA_TAGS=$(curl -s -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/omeka/omeka-s/tags" | \
+            jq -r '.[].name' | \
+            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | \
+            grep -E '^v4\.[0-9]+\.[0-9]+$|^v[5-9][0-9]*\.' | \
+            sort -V)
+          echo "Filtered and sorted Omeka S tags:"
+          echo "$OMEKA_TAGS"
+
+          echo "omeka_tags=$OMEKA_TAGS" >> $GITHUB_ENV
 
       - name: Get existing tags
         id: get-existing-tags
         run: |
           git fetch --tags
           EXISTING_TAGS=$(git tag -l)
-          # Convert newlines to spaces
           EXISTING_TAGS_FORMATTED=$(echo "$EXISTING_TAGS" | tr '\n' ' ')
           echo "existing_tags=$EXISTING_TAGS_FORMATTED" >> $GITHUB_ENV
 
       - name: Process missing tags
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+          omeka_tags: ${{ env.omeka_tags }}
+          existing_tags: ${{ env.existing_tags }}
         run: |
-          # Convert existing tags to a pattern for quick matching
-          EXISTING_TAGS_PATTERN=" ${{ env.existing_tags }} "
-          # Counter for processed tags
+          EXISTING_TAGS_PATTERN=" $existing_tags "
           PROCESSED=0
-          
-          # Process each Omeka S tag
-          for tag in ${{ env.omeka_tags }}; do
-            # Only process version tags starting with 'v'
-            if [[ ! "$tag" =~ ^v ]]; then
-              continue
-            fi
-            
-            # Check if tag exists
+
+          for tag in $omeka_tags; do
             if [[ "$EXISTING_TAGS_PATTERN" == *" $tag "* ]]; then
               echo "Tag $tag already exists, skipping"
               continue
             fi
 
-            # Create and push tag (only need to do this once)            
             echo "Creating new tag: $tag"
-            
             git tag "$tag"
             git push origin "$tag"
 
-            # Trigger build workflow
             echo "Triggering build for tag $tag"
             curl -X POST \
               -H "Accept: application/vnd.github.v3+json" \
@@ -75,12 +70,10 @@ jobs:
                 }
               }'
 
-            # Count processed tag
             PROCESSED=$((PROCESSED+1))
           done
-          
+
           echo "Process completed. Created $PROCESSED new tags."
-          echo "The buildx workflow will be automatically triggered for these tags."
 
       - name: Summary
         run: |
