@@ -1,0 +1,6 @@
+/data
+/Persistent
+.data
+.DS_Store
+.aider*
+.env

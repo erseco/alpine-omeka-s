@@ -1,0 +1,56 @@
+---
+services:
+  mariadb:
+    image: mariadb:lts
+    restart: unless-stopped
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: true
+      MYSQL_DATABASE: omeka_s
+      MYSQL_USER: omeka_s
+      MYSQL_PASSWORD: omeka_s
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  omeka-s:
+    image: erseco/alpine-omeka-s
+    build:
+      context: .
+      args:
+        # To use a specific Omeka S version, set OMEKA_VERSION to git release tag.
+        # You can find the list of available tags at:
+        # https://api.github.com/repos/omeka/omeka-s/tags
+        #
+        # Example:
+        # OMEKA_VERSION: v4.1.1
+        OMEKA_VERSION: develop
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      memory_limit: 512M
+      upload_max_filesize: 64M
+      post_max_size: 64M
+      max_execution_time: 300
+      SITE_URL: http://localhost:8080
+      APPLICATION_ENV: development
+      DB_HOST: mariadb
+      DB_NAME: omeka_s
+      DB_USER: omeka_s
+      DB_PASSWORD: omeka_s
+      OMEKA_ADMIN_EMAIL: admin@example.com
+      OMEKA_ADMIN_NAME: "Site Administrator"
+      OMEKA_ADMIN_PASSWORD: PLEASE_CHANGEME
+      OMEKA_SITE_TITLE: "Omeka S Sample Site"
+      # Example of how to automatically install themes and modules
+      OMEKA_THEMES: "https://github.com/omeka-s-themes/default"
+      OMEKA_MODULES: |
+        https://github.com/Daniel-KM/Omeka-S-module-Common
+        https://github.com/Daniel-KM/Omeka-S-module-EasyAdmin
+    volumes:
+      - omeka_volume:/var/www/html/volume:Z
+    depends_on:
+      - mariadb
+
+volumes:
+  mariadb_data:
+  omeka_volume:

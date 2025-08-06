@@ -1,0 +1,40 @@
+---
+services:
+  app:
+    build: .
+    environment:
+      SITE_URL: http://app:8080
+      DB_HOST: mariadb
+      DB_NAME: omeka_s
+      DB_USER: omeka_s
+      DB_PASSWORD: omeka_s
+      OMEKA_ADMIN_EMAIL: admin@example.com
+      OMEKA_ADMIN_NAME: "Site Administrator"
+      OMEKA_ADMIN_PASSWORD: PLEASE_CHANGEME
+      OMEKA_SITE_TITLE: "Omeka S Sample Site"
+      OMEKA_THEMES: "https://github.com/omeka-s-themes/default"
+      OMEKA_MODULES: |
+        https://github.com/Daniel-KM/Omeka-S-module-Common
+        https://github.com/Daniel-KM/Omeka-S-module-EasyAdmin
+
+    depends_on:
+      - mariadb
+
+  mariadb:
+    image: mariadb:lts
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: true
+      MYSQL_ROOT_PASSWORD: omeka_s
+      MYSQL_DATABASE: omeka_s
+      MYSQL_USER: omeka_s
+      MYSQL_PASSWORD: omeka_s
+
+  sut:
+    image: alpine:latest
+    depends_on:
+      - app
+    environment:
+      - SOURCE_BRANCH
+    command: /tmp/run_tests.sh
+    volumes:
+      - "./run_tests.sh:/tmp/run_tests.sh:ro"
