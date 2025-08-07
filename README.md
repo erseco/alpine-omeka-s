@@ -110,15 +110,30 @@ You can configure the container using the following environment variables in you
 
 ### Installing Modules and Themes
 
-You can automatically install modules and themes by providing space-separated URLs in the `OMEKA_MODULES` and `OMEKA_THEMES` environment variables. Both direct `.zip` file URLs and GitHub repository URLs are supported.
+This image includes the [Omeka-S-CLI](https://github.com/GhentCDH/Omeka-S-Cli) tool, which simplifies the management of modules and themes. You can automatically install them by providing space-separated names in the `OMEKA_MODULES` and `OMEKA_THEMES` environment variables.
 
+**Example:**
 ```yaml
 environment:
-  OMEKA_THEMES: "https://github.com/omeka-s-themes/default"
-  OMEKA_MODULES: |
-    https://github.com/Daniel-KM/Omeka-S-module-Common
-    https://github.com/Daniel-KM/Omeka-S-module-EasyAdmin
+  OMEKA_THEMES: "default"
+  OMEKA_MODULES: "Common EasyAdmin"
 ```
+
+### Advanced Management with `omeka-s-cli`
+
+For more advanced tasks, you can use `omeka-s-cli` directly within the container. This allows you to list, install, uninstall, and manage modules and themes.
+
+**Example Commands:**
+
+*   **List all installed modules:**
+    ```bash
+    docker compose exec omeka-s omeka-s-cli module:list
+    ```
+
+*   **Install a new theme:**
+    ```bash
+    docker compose exec omeka-s omeka-s-cli theme:install foundation
+    ```
 
 After changing the version, rebuild the image:
 ```bash

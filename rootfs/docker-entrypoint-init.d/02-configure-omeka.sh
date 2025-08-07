@@ -79,38 +79,27 @@ process_download() {
     esac
 }
 
-install_items_from_urls() {
+install_items_from_names() {
     local kind="$1"
     local env_var="$2"
-    local base_path="/var/www/html/volume/$kind"
-    local urls value resolved name item_dir tmp_dir
+    local names
 
-    value=$(eval "echo \${$env_var:-}")
-    [ -z "$value" ] && echo "No $kind URLs provided. Skipping." && return
+    names=$(eval "echo \${$env_var:-}")
+    [ -z "$names" ] && echo "No $kind to install. Skipping." && return
 
-    tmp_dir=$(mktemp -d)
-    # echo "$value" | while IFS= read -r url; do
-    for url in $value; do
-
-        [ -z "$url" ] && continue
-
-        resolved=$(process_download "$url" "$kind") || continue
-        echo "Resolved $kind URL: $resolved"
-
-        name=$(basename "$resolved" .zip | sed 's/^theme-//' | sed 's/^module-//')
-        item_dir="$base_path/$name"
-
-        [ -d "$item_dir" ] && echo "$kind '$name' already exists. Skipping." && continue
-
-        curl -sL "$resolved" -o "$tmp_dir/item.zip" || {
-            echo "ERROR: Failed downloading $kind from $resolved" >&2
-            continue
-        }
-
-        unzip -oq "$tmp_dir/item.zip" -d "$base_path"
+    for name in $names; do
+        [ -z "$name" ] && continue
+        echo "Processing $name..."
+        if omeka-s-cli "${kind%s}:download" "$name" --skip-installed; then
+            if omeka-s-cli "${kind%s}:install" "$name"; then
+                echo "$kind installed successfully: $name"
+            else
+                echo "ERROR: Failed to install $kind: $name" >&2
+            fi
+        else
+            echo "ERROR: Failed to download $kind: $name" >&2
+        fi
     done
-
-    rm -rf "$tmp_dir"
 }
 
 # Install Omeka S only if required environment variables are set and not empty
@@ -137,8 +126,8 @@ echo "=== Omeka S Entrypoint start ==="
 
 configure_database_ini
 
-install_items_from_urls "themes" "OMEKA_THEMES"
-install_items_from_urls "modules" "OMEKA_MODULES"
+install_items_from_names "themes" "OMEKA_THEMES"
+install_items_from_names "modules" "OMEKA_MODULES"
 
 install_omeka
 

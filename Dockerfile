@@ -19,7 +19,12 @@ ENV APPLICATION_ENV=production \
     memory_limit=512M \
     upload_max_filesize=64M \
     post_max_size=64M \
-    max_execution_time=300
+    max_execution_time=300 \
+    HOME=/tmp
+
+# Install Omeka-S-CLI
+ADD https://github.com/GhentCDH/Omeka-S-Cli/releases/latest/download/omeka-s-cli.phar /usr/local/bin/omeka-s-cli
+RUN chmod +x /usr/local/bin/omeka-s-cli
 
 # Download, extract, and configure Omeka S in a single layer
 RUN set -x && \
