@@ -12,10 +12,10 @@ services:
       OMEKA_ADMIN_NAME: "Site Administrator"
       OMEKA_ADMIN_PASSWORD: PLEASE_CHANGEME
       OMEKA_SITE_TITLE: "Omeka S Sample Site"
-      OMEKA_THEMES: "https://github.com/omeka-s-themes/default"
+      OMEKA_THEMES: "default"
       OMEKA_MODULES: |
-        https://github.com/Daniel-KM/Omeka-S-module-Common
-        https://github.com/Daniel-KM/Omeka-S-module-EasyAdmin
+        Common
+        EasyAdmin
 
     depends_on:
       - mariadb
