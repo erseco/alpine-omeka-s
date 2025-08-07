@@ -37,14 +37,12 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
           omeka_tags: ${{ env.omeka_tags }}
-          existing_tags: ${{ env.existing_tags }}
         run: |
-          EXISTING_TAGS_PATTERN=" $existing_tags "
           PROCESSED=0
 
           for tag in $omeka_tags; do
-            if [[ "$EXISTING_TAGS_PATTERN" == *" $tag "* ]]; then
-              echo "Tag $tag already exists, skipping"
+            if git rev-parse "$tag" >/dev/null 2>&1; then
+              echo "Tag $tag already exists locally, skipping"
               continue
             fi
 
@@ -68,6 +66,7 @@ jobs:
           done
 
           echo "Process completed. Created $PROCESSED new tags."
+
 
       - name: Summary
         run: |
