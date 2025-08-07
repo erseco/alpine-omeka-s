@@ -85,8 +85,33 @@ You can configure the container using the following environment variables in you
 | `OMEKA_LOCALE`         | Interface locale for the installation.     | `en_US`      |
 | OMEKA_THEMES           | List of theme names                        |              |
 | OMEKA_MODULES          | List of module names                       |              |
+| `OMEKA_CSV_IMPORT_FILE`| Path to a CSV file for initial data import.| `null`       |
 
 **Note:** The Omeka S installation will only run if `OMEKA_ADMIN_EMAIL`, `OMEKA_ADMIN_PASSWORD`, and `OMEKA_SITE_TITLE` are all set.
+
+### Automatic CSV Import
+
+If you specify the `OMEKA_CSV_IMPORT_FILE` environment variable, the container will automatically import data from the given CSV file at startup.
+
+**Example:**
+
+```yaml
+environment:
+  OMEKA_CSV_IMPORT_FILE: /path/to/your/data.csv
+```
+
+The CSV file should be mounted into the container. For example, you can add this to your `docker-compose.yml`:
+
+```yaml
+volumes:
+  - ./my-data.csv:/path/to/your/data.csv
+```
+
+**CSV Format Recommendations:**
+
+*   **Encoding:** The file must be UTF-8 encoded.
+*   **Headers:** Use headers that match Omeka S properties, like `dcterms:title`, `dcterms:creator`, etc., for automatic mapping.
+*   For more details, refer to the official [Omeka S CSV Import documentation](https://omeka.org/s/docs/user-manual/modules/csvimport/).
 
 ### Database Connection
 

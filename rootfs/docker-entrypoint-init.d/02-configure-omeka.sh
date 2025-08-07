@@ -133,5 +133,30 @@ install_omeka
 install_items_from_names "themes" "OMEKA_THEMES"
 install_items_from_names "modules" "OMEKA_MODULES"
 
+# Automatically import data from a CSV file, if provided
+import_from_csv() {
+    [ -z "${OMEKA_CSV_IMPORT_FILE:-}" ] && return
+
+    echo "CSV file specified: $OMEKA_CSV_IMPORT_FILE. Preparing for import..."
+
+    # Ensure the CSVImport module is installed
+    install_items_from_names "modules" "CSVImport"
+
+    # Check if the import file exists
+    if [ ! -f "$OMEKA_CSV_IMPORT_FILE" ]; then
+        echo "WARNING: CSV import file not found: $OMEKA_CSV_IMPORT_FILE. Skipping."
+        return
+    fi
+
+    echo "Starting CSV import from $OMEKA_CSV_IMPORT_FILE..."
+    if omeka-s-cli csv-import --file="$OMEKA_CSV_IMPORT_FILE"; then
+        echo "CSV import completed successfully."
+    else
+        echo "WARNING: CSV import failed. Please check the logs for details."
+    fi
+}
+
+import_from_csv
+
 echo "=== Omeka S Entrypoint completed ==="
 exec "$@"
