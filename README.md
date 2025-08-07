@@ -134,7 +134,7 @@ For more advanced tasks, you can use `omeka-s-cli` directly within the container
 
 *   **Install a new theme:**
     ```bash
-    docker compose exec omeka-s omeka-s-cli theme:install foundation
+    docker compose exec omeka-s omeka-s-cli theme:download foundation
     ```
 
 After changing the version, rebuild the image:
