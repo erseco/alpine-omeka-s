@@ -83,6 +83,8 @@ You can configure the container using the following environment variables in you
 | `OMEKA_ADMIN_NAME`     | Name of the administrator.                 | `Site Administrator` |
 | `OMEKA_TIMEZONE`       | Installation timezone (e.g., `America/New_York`). | `UTC`        |
 | `OMEKA_LOCALE`         | Interface locale for the installation.     | `en_US`      |
+| OMEKA_THEMES           | List of theme names                        |              |
+| OMEKA_MODULES          | List of module names                       |              |
 
 **Note:** The Omeka S installation will only run if `OMEKA_ADMIN_EMAIL`, `OMEKA_ADMIN_PASSWORD`, and `OMEKA_SITE_TITLE` are all set.
 

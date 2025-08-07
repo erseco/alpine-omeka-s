@@ -90,11 +90,13 @@ install_items_from_names() {
     for name in $names; do
         [ -z "$name" ] && continue
         echo "Processing $name..."
-        if omeka-s-cli "${kind%s}:download" "$name" --skip-installed; then
-            if omeka-s-cli "${kind%s}:install" "$name"; then
-                echo "$kind installed successfully: $name"
-            else
-                echo "ERROR: Failed to install $kind: $name" >&2
+        if omeka-s-cli "${kind%s}:download" "$name"; then
+            if [ "$kind" = "modules" ]; then
+                if omeka-s-cli "${kind%s}:install" "$name"; then
+                    echo "$kind installed successfully: $name"
+                else
+                    echo "ERROR: Failed to install $kind: $name" >&2
+                fi
             fi
         else
             echo "ERROR: Failed to download $kind: $name" >&2
@@ -126,10 +128,10 @@ echo "=== Omeka S Entrypoint start ==="
 
 configure_database_ini
 
+install_omeka
+
 install_items_from_names "themes" "OMEKA_THEMES"
 install_items_from_names "modules" "OMEKA_MODULES"
-
-install_omeka
 
 echo "=== Omeka S Entrypoint completed ==="
 exec "$@"

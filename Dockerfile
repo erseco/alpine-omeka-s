@@ -59,7 +59,7 @@ RUN set -x && \
     ln -s volume/logs . && \
     \
     # 4. Set final permissions
-    chown -R nobody:nobody /var/www/html/volume /var/www/html
+    chown -R nobody:nobody /var/www/html/volume /var/www/html /usr/local/bin/omeka-s-cli
 
 # Copy custom entrypoint scripts
 COPY --chown=nobody rootfs/ /
