@@ -9,8 +9,8 @@
   <policy domain="resource" name="height" value="8000"/>
   <policy domain="resource" name="time"   value="120"/>
 
-  <!-- Deny-all first -->
-  <policy domain="delegate" rights="none" pattern="*"/>
+  <!-- Deny-all first (allow Ghostscript) -->
+  <policy domain="delegate" rights="execute" pattern="gs"/>
   <policy domain="filter"   rights="none" pattern="*"/>
   <policy domain="coder"    rights="none" pattern="*"/>
 
@@ -31,6 +31,7 @@
 
   <!-- Whitelist common web image formats -->
   <policy domain="coder" rights="read|write" pattern="JPEG"/>
+  <policy domain="coder" rights="read|write" pattern="JPG"/>
   <policy domain="coder" rights="read|write" pattern="PNG"/>
   <policy domain="coder" rights="read|write" pattern="WEBP"/>
   <policy domain="coder" rights="read|write" pattern="GIF"/>
