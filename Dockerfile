@@ -4,6 +4,10 @@ FROM ${ARCH}erseco/alpine-php-webserver:3.20.7
 
 LABEL maintainer="Ernesto Serrano <info@ernesto.es>"
 
+LABEL org.opencontainers.image.source="https://github.com/erseco/alpine-omeka-s" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.title="Alpine Omeka S"
+
 # Install system dependencies as root
 USER root
 RUN apk add --no-cache \
@@ -69,3 +73,5 @@ USER nobody
 
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=10 CMD curl -fsS http://127.0.0.1:8080/ >/dev/null || exit 1

@@ -68,6 +68,17 @@ install_items_from_names() {
     done
 }
 
+# Ensure a module is present (download+install if missing).
+ensure_module() {
+    local name="$1"
+    if omeka-s-cli module:list | awk '{print $2}' | grep -qx "$name"; then
+        echo "Module already installed: $name"
+        return 0
+    fi
+    echo "Installing module: $name"
+    omeka-s-cli module:download "$name" && omeka-s-cli module:install "$name"
+}
+
 # Install Omeka S only if required environment variables are set and not empty
 install_omeka() {
     [ -z "${OMEKA_ADMIN_EMAIL:-}" ] && return
@@ -97,7 +108,7 @@ import_from_csv() {
     fi
 
     # Ensure the CSVImport module is installed
-    install_items_from_names "modules" "CSVImport"
+    ensure_module "CSVImport"
 
     echo "Starting CSV import from $OMEKA_CSV_IMPORT_FILE..."
     if php import_cli.php "$OMEKA_CSV_IMPORT_FILE"; then
