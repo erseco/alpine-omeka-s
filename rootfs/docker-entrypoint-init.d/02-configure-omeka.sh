@@ -43,42 +43,6 @@ configure_database_ini() {
     chown nobody:nobody "$config_file"
 }
 
-get_github_zip_url() {
-    local repo_url="$1"
-    local clean_url=$(echo "$repo_url" | sed 's|/*$||')
-    local owner repo api_url download_url
-
-    owner=$(echo "$clean_url" | sed -n 's|https://github.com/\([^/]*\)/\([^/]*\)$|\1|p')
-    repo=$(echo "$clean_url" | sed -n 's|https://github.com/\([^/]*\)/\([^/]*\)$|\2|p')
-
-    if [ -z "$owner" ] || [ -z "$repo" ]; then
-        echo "ERROR: Invalid GitHub URL: $repo_url" >&2
-        return 1
-    fi
-
-    api_url="https://api.github.com/repos/$owner/$repo/releases/latest"
-    download_url=$(curl -s "$api_url" | jq -r '.assets[] | select(.name | endswith(".zip")) | .browser_download_url' | head -n1)
-
-    [ -n "$download_url" ] && [ "$download_url" != "null" ] && echo "$download_url" || {
-        echo "ERROR: No ZIP found for $repo_url" >&2
-        return 1
-    }
-}
-
-process_download() {
-    local url="$1"
-    local type="$2"
-
-    case "$url" in
-        *.zip) echo "$url" ;;
-        https://github.com/*) get_github_zip_url "$url" ;;
-        *)
-            echo "ERROR: Unsupported $type URL: $url" >&2
-            return 1
-            ;;
-    esac
-}
-
 install_items_from_names() {
     local kind="$1"
     local env_var="$2"
@@ -104,6 +68,17 @@ install_items_from_names() {
     done
 }
 
+# Ensure a module is present (download+install if missing).
+ensure_module() {
+    local name="$1"
+    if omeka-s-cli module:list | awk '{print $2}' | grep -qx "$name"; then
+        echo "Module already installed: $name"
+        return 0
+    fi
+    echo "Installing module: $name"
+    omeka-s-cli module:download "$name" && omeka-s-cli module:install "$name"
+}
+
 # Install Omeka S only if required environment variables are set and not empty
 install_omeka() {
     [ -z "${OMEKA_ADMIN_EMAIL:-}" ] && return
@@ -120,6 +95,29 @@ install_omeka() {
     eval "$cmd"
 }
 
+# Automatically import data from a CSV file, if provided
+import_from_csv() {
+    [ -z "${OMEKA_CSV_IMPORT_FILE:-}" ] && return
+
+    echo "CSV file specified: $OMEKA_CSV_IMPORT_FILE. Preparing for import..."
+
+    # Check if the import file exists
+    if [ ! -f "$OMEKA_CSV_IMPORT_FILE" ]; then
+        echo "WARNING: CSV import file not found: $OMEKA_CSV_IMPORT_FILE. Skipping."
+        return
+    fi
+
+    # Ensure the CSVImport module is installed
+    ensure_module "CSVImport"
+
+    echo "Starting CSV import from $OMEKA_CSV_IMPORT_FILE..."
+    if php import_cli.php "$OMEKA_CSV_IMPORT_FILE"; then
+        echo "CSV import completed successfully."
+    else
+        echo "WARNING: CSV import failed. Please check the logs for details."
+    fi
+}
+
 # --- Main Execution ---
 
 echo "=== Omeka S Entrypoint start ==="
@@ -132,6 +130,8 @@ install_omeka
 
 install_items_from_names "themes" "OMEKA_THEMES"
 install_items_from_names "modules" "OMEKA_MODULES"
+
+import_from_csv
 
 echo "=== Omeka S Entrypoint completed ==="
 exec "$@"

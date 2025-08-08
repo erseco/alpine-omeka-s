@@ -83,10 +83,35 @@ You can configure the container using the following environment variables in you
 | `OMEKA_ADMIN_NAME`     | Name of the administrator.                 | `Site Administrator` |
 | `OMEKA_TIMEZONE`       | Installation timezone (e.g., `America/New_York`). | `UTC`        |
 | `OMEKA_LOCALE`         | Interface locale for the installation.     | `en_US`      |
-| OMEKA_THEMES           | List of theme names                        |              |
-| OMEKA_MODULES          | List of module names                       |              |
+| `OMEKA_THEMES`         | List of theme names                        |              |
+| `OMEKA_MODULES`        | List of module names                       |              |
+| `OMEKA_CSV_IMPORT_FILE`| Path to a CSV file for initial data import.| `null`       |
 
 **Note:** The Omeka S installation will only run if `OMEKA_ADMIN_EMAIL`, `OMEKA_ADMIN_PASSWORD`, and `OMEKA_SITE_TITLE` are all set.
+
+### Automatic CSV Import
+
+If you specify the `OMEKA_CSV_IMPORT_FILE` environment variable, the container will automatically import data from the given CSV file at startup.
+
+**Example:**
+
+```yaml
+environment:
+  OMEKA_CSV_IMPORT_FILE: /path/to/your/data.csv
+```
+
+The CSV file should be mounted into the container. For example, you can add this to your `docker-compose.yml`:
+
+```yaml
+volumes:
+  - ./my-data.csv:/path/to/your/data.csv
+```
+
+**CSV Format Recommendations:**
+
+*   **Encoding:** The file must be UTF-8 encoded.
+*   **Headers:** Use headers that match Omeka S properties, like `dcterms:title`, `dcterms:creator`, etc., for automatic mapping.
+*   For more details, refer to the official [Omeka S CSV Import documentation](https://omeka.org/s/docs/user-manual/modules/csvimport/).
 
 ### Database Connection
 
@@ -141,6 +166,82 @@ After changing the version, rebuild the image:
 ```bash
 docker compose build omeka-s
 ```
+
+
+### Automatic CSV Import (`OMEKA_CSV_IMPORT_FILE`)
+
+If you set `OMEKA_CSV_IMPORT_FILE`, the container will import data at startup using the **CSVImport** module and the bundled `import_cli.php`. The importer is configured as an **upsert**:
+
+- If an item with the same **title** (`dcterms:title`) already exists, it will be **updated**.
+- If not found, a **new item** will be **created**.
+
+#### How to enable
+
+```yaml
+services:
+  omeka-s:
+    environment:
+      # ...
+      OMEKA_CSV_IMPORT_FILE: /data/sample_data.csv
+    volumes:
+      - ./data:/data:ro
+````
+
+> The entrypoint ensures the `CSVImport` module is present and runs the import once on startup.
+> The importer makes a **temporary copy** of your CSV before dispatching the job, so your original file is not deleted.
+
+#### Expected CSV format
+
+* **Encoding:** UTF-8 (no BOM).
+* **Delimiter:** `,` (comma).
+* **Quote:** `"` (double quote).
+* **Escape:** `\` (backslash).
+* **Header row:** required.
+
+Minimum headers supported by the default mapping included in this image:
+
+| Column Name           | Required | Purpose                                                         |
+| --------------------- | -------- | --------------------------------------------------------------- |
+| `dcterms:title`       | Yes      | Used as the **identifier** for upsert (update vs create).       |
+| `dcterms:creator`     | No       | Creator (example mapping).                                      |
+| `dcterms:description` | No       | Description (example mapping).                                  |
+| `media_url`           | No       | A direct URL to a media file; ingested with the `url` ingester. |
+
+**Upsert behavior:**
+
+* Action: `update`
+* Identifier property: `dcterms:title`
+* If no match by title: `create`
+
+If multiple items share the same title, the module’s default lookup can update the first match. Prefer unique titles for deterministic results.
+
+#### Example CSV
+
+```csv
+dcterms:title,dcterms:creator,dcterms:description,media_url
+Eiffel Tower,Gustave Eiffel,"A wrought-iron lattice tower in Paris, France.",https://upload.wikimedia.org/wikipedia/commons/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg
+Mona Lisa,Leonardo da Vinci,"A portrait painting by the Italian Renaissance artist.",https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/800px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg
+Statue of Liberty,Frédéric Auguste Bartholdi,"A neoclassical sculpture on Liberty Island, New York Harbor.",https://upload.wikimedia.org/wikipedia/commons/a/a1/Statue_of_Liberty_7.jpg
+```
+
+#### What the importer does under the hood
+
+* Loads Omeka S and the `CSVImport` module.
+* Authenticates using the admin configured during installation.
+* Reads the header row to build the column list.
+* Applies a built-in mapping:
+
+  * `dcterms:title` → property id `1`
+  * `dcterms:creator` → property id `2`
+  * `dcterms:description` → property id `4`
+  * `media_url` → ingester `url`
+* Dispatches `CSVImport\Job\Import` with:
+
+  * `action=update`
+  * `identifier_property=dcterms:title`
+  * `action_unidentified=create`
+  * batches of `rows_by_batch=20`
+
 
 ### Running Commands as Root
 

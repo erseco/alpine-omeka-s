@@ -46,6 +46,7 @@ services:
       OMEKA_MODULES: |
         Common
         EasyAdmin
+      OMEKA_CSV_IMPORT_FILE: '/data/sample_data.csv' # Absolute path inside container
     volumes:
       - omeka_volume:/var/www/html/volume:Z
     depends_on:
