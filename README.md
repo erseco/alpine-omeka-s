@@ -138,7 +138,7 @@ volumes:
 | Variable Name               | Description                                       | Default |
 |-----------------------------|---------------------------------------------------|---------|
 | PRE_CONFIGURE_COMMANDS      | Commands to run before starting the configuration |         |
-| POST_CONFIGURE_COMMANDS     | Commands to run after finished the configuration  |         |
+| POST_CONFIGURE_COMMANDS     | Commands to run after finishing the configuration |         |
 
 
 ## Advanced Features
