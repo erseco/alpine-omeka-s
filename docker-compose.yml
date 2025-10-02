@@ -47,6 +47,11 @@ services:
         Common
         EasyAdmin
       OMEKA_CSV_IMPORT_FILE: '/data/sample_data.csv' # Absolute path inside container
+      PRE_CONFIGURE_COMMANDS: |
+        echo 'This is a pre-configure command'
+      POST_CONFIGURE_COMMANDS: |
+        echo 'This is a post-configure command'
+      
     volumes:
       - omeka_volume:/var/www/html/volume:Z
     depends_on:
