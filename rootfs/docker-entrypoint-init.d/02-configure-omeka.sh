@@ -124,6 +124,12 @@ echo "=== Omeka S Entrypoint start ==="
 
 [ -n "${DB_HOST:-}" ] && check_db_availability "$DB_HOST" "${DB_PORT:-3306}"
 
+# Execute pre-install commands if the variable is set
+if [ -n "$PRE_CONFIGURE_COMMANDS" ]; then
+    echo "Executing pre-configure commands..."
+    eval "$PRE_CONFIGURE_COMMANDS"
+fi
+
 configure_database_ini
 
 install_omeka
@@ -132,6 +138,12 @@ install_items_from_names "themes" "OMEKA_THEMES"
 install_items_from_names "modules" "OMEKA_MODULES"
 
 import_from_csv
+
+# Execute post-install commands if the variable is set
+if [ -n "$POST_CONFIGURE_COMMANDS" ]; then
+    echo "Executing post-configure commands..."
+    eval "$POST_CONFIGURE_COMMANDS"
+fi
 
 echo "=== Omeka S Entrypoint completed ==="
 exec "$@"

@@ -125,13 +125,21 @@ volumes:
 
 ### PHP & Webserver
 
-| Variable Name         | Description                               | Default   |
-|-----------------------|-------------------------------------------|-----------|
+| Variable Name         | Description                               | Default      |
+|-----------------------|-------------------------------------------|--------------|
 | `APPLICATION_ENV`     | Set to `development` for debug mode.      | `production` |
-| `memory_limit`        | PHP memory limit.                         | `512M`    |
-| `upload_max_filesize` | Max size for uploaded files.              | `128M`    |
-| `post_max_size`       | Max size of POST data.                    | `128M`    |
-| `max_execution_time`  | PHP max execution time in seconds.        | `300`     |
+| `memory_limit`        | PHP memory limit.                         | `512M`       |
+| `upload_max_filesize` | Max size for uploaded files.              | `128M`       |
+| `post_max_size`       | Max size of POST data.                    | `128M`       |
+| `max_execution_time`  | PHP max execution time in seconds.        | `300`        |
+
+### Other Configuration variables
+
+| Variable Name               | Description                                       | Default |
+|-----------------------------|---------------------------------------------------|---------|
+| PRE_CONFIGURE_COMMANDS      | Commands to run before starting the configuration |         |
+| POST_CONFIGURE_COMMANDS     | Commands to run after finished the configuration  |         |
+
 
 ## Advanced Features
 
