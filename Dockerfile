@@ -1,6 +1,6 @@
 # Base image using alpine-php-webserver
 ARG ARCH=
-FROM ${ARCH}erseco/alpine-php-webserver:3.20.8
+FROM ${ARCH}erseco/alpine-php-webserver:3.23.0
 
 LABEL maintainer="Ernesto Serrano <info@ernesto.es>"
 
@@ -8,11 +8,14 @@ LABEL org.opencontainers.image.source="https://github.com/erseco/alpine-omeka-s"
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.title="Alpine Omeka S"
 
+# Set shell with pipefail for Alpine
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+
 # Install system dependencies as root
 USER root
 RUN apk add --no-cache \
     unzip wget jq ghostscript poppler-utils imagemagick \
-    netcat-openbsd php83-pecl-imagick php83-xsl php83-intl php83-xmlwriter composer \
+    netcat-openbsd php84-pecl-imagick php84-xsl php84-intl php84-xmlwriter composer \
     && rm -rf /var/cache/apk/*
 
 # Omeka S version configuration
@@ -30,6 +33,9 @@ ENV APPLICATION_ENV=production \
 ADD https://github.com/GhentCDH/Omeka-S-Cli/releases/latest/download/omeka-s-cli.phar /usr/local/bin/omeka-s-cli
 RUN chmod +x /usr/local/bin/omeka-s-cli
 
+# Set working directory
+WORKDIR /var/www/html
+
 # Download, extract, and configure Omeka S in a single layer
 RUN set -x && \
     \
@@ -40,22 +46,17 @@ RUN set -x && \
       OMEKA_S_URL="https://github.com/omeka/omeka-s/tarball/refs/tags/${OMEKA_VERSION}"; \
     fi && \
     echo "Downloading Omeka S from: $OMEKA_S_URL" && \
-    curl -L "$OMEKA_S_URL" | tar xz --strip-components=1 -C /var/www/html/ && \
+    curl -L "$OMEKA_S_URL" | tar xz --strip-components=1 -C . && \
     \
     # 2. Create the volume structure for persistent data
-    mkdir -p /var/www/html/volume/config \
-             /var/www/html/volume/files \
-             /var/www/html/volume/modules \
-             /var/www/html/volume/themes \
-             /var/www/html/volume/logs && \
+    mkdir -p volume/config \
+             volume/files \
+             volume/modules \
+             volume/themes \
+             volume/logs && \
     \
     # 3. Create symbolic links to the volume directories
-    rm -rf /var/www/html/config \
-           /var/www/html/files \
-           /var/www/html/modules \
-           /var/www/html/themes \
-           /var/www/html/logs && \
-    cd /var/www/html && \
+    rm -rf config files modules themes logs && \
     ln -s volume/config . && \
     ln -s volume/files . && \
     ln -s volume/modules . && \
@@ -63,7 +64,7 @@ RUN set -x && \
     ln -s volume/logs . && \
     \
     # 4. Set final permissions
-    chown -R nobody:nobody /var/www/html/volume /var/www/html /usr/local/bin/omeka-s-cli
+    chown -R nobody:nobody volume . /usr/local/bin/omeka-s-cli
 
 # Copy custom entrypoint scripts
 COPY --chown=nobody rootfs/ /
