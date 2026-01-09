@@ -127,8 +127,8 @@ volumes:
 
 | Variable Name         | Description                               | Default      |
 |-----------------------|-------------------------------------------|--------------|
-| `APPLICATION_ENV`     | Set to `development` for debug mode and to disable OPcache timestamp validation. | `production` |
-| `OPCACHE_ENABLE`      | Set to `0` to enable OPcache timestamp validation for development. | `1` (production mode) |
+| `APPLICATION_ENV`     | Set to `development` for debug mode and to enable OPcache timestamp validation (development mode). | `production` |
+| `OPCACHE_ENABLE`      | Set to `0` to configure OPcache for development mode (enables timestamp validation). Note: OPcache remains enabled, but with development-friendly settings. | `1` (production mode) |
 | `memory_limit`        | PHP memory limit.                         | `512M`       |
 | `upload_max_filesize` | Max size for uploaded files.              | `128M`       |
 | `post_max_size`       | Max size of POST data.                    | `128M`       |
@@ -153,7 +153,7 @@ For development workflows where you need code changes to be reflected immediatel
 **Option 1: Using `OPCACHE_ENABLE` variable**
 ```yaml
 environment:
-  OPCACHE_ENABLE: "0"  # Enables timestamp validation for development
+  OPCACHE_ENABLE: "0"  # Configures OPcache for development (enables timestamp validation)
 ```
 
 **Option 2: Using `APPLICATION_ENV` variable**
