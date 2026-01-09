@@ -127,7 +127,8 @@ volumes:
 
 | Variable Name         | Description                               | Default      |
 |-----------------------|-------------------------------------------|--------------|
-| `APPLICATION_ENV`     | Set to `development` for debug mode.      | `production` |
+| `APPLICATION_ENV`     | Set to `development` for debug mode and to disable OPcache timestamp validation. | `production` |
+| `OPCACHE_ENABLE`      | Set to `0` to enable OPcache timestamp validation for development. | `1` (production mode) |
 | `memory_limit`        | PHP memory limit.                         | `512M`       |
 | `upload_max_filesize` | Max size for uploaded files.              | `128M`       |
 | `post_max_size`       | Max size of POST data.                    | `128M`       |
@@ -142,6 +143,35 @@ volumes:
 
 
 ## Advanced Features
+
+### OPcache Configuration for Development
+
+By default, the image uses production-optimized OPcache settings that do not validate file timestamps, which provides maximum performance but prevents code changes from being immediately visible (requires container restart).
+
+For development workflows where you need code changes to be reflected immediately (e.g., when developing Omeka S modules with mounted volumes), you can enable OPcache timestamp validation using either of these methods:
+
+**Option 1: Using `OPCACHE_ENABLE` variable**
+```yaml
+environment:
+  OPCACHE_ENABLE: "0"  # Enables timestamp validation for development
+```
+
+**Option 2: Using `APPLICATION_ENV` variable**
+```yaml
+environment:
+  APPLICATION_ENV: development  # Auto-enables timestamp validation
+```
+
+When either `OPCACHE_ENABLE=0` or `APPLICATION_ENV=development` is set, the container will configure OPcache to validate file timestamps on every request (`opcache.validate_timestamps=1` and `opcache.revalidate_freq=0`), allowing code changes to be immediately visible without restarting the container.
+
+**Production mode (default):**
+- `opcache.enable=1`
+- `opcache.validate_timestamps=0` (no timestamp checking for maximum performance)
+
+**Development mode:**
+- `opcache.enable=1`
+- `opcache.validate_timestamps=1` (checks files on every request)
+- `opcache.revalidate_freq=0` (no delay in revalidation)
 
 ### Installing Modules and Themes
 
