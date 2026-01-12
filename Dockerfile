@@ -24,8 +24,9 @@ ARG OMEKA_VERSION=develop
 # Default environment variables
 ENV APPLICATION_ENV=production \
     memory_limit=512M \
-    upload_max_filesize=64M \
-    post_max_size=64M \
+    upload_max_filesize=128M \
+    post_max_size=128M \
+    client_max_body_size=128M \
     max_execution_time=300 \
     HOME=/tmp
 

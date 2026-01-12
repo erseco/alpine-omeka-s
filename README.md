@@ -132,6 +132,7 @@ volumes:
 | `memory_limit`        | PHP memory limit.                         | `512M`       |
 | `upload_max_filesize` | Max size for uploaded files.              | `128M`       |
 | `post_max_size`       | Max size of POST data.                    | `128M`       |
+| `client_max_body_size`| Nginx max body size for uploads.          | `128M`       |
 | `max_execution_time`  | PHP max execution time in seconds.        | `300`        |
 
 ### Other Configuration variables
