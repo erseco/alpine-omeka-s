@@ -38,6 +38,12 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
           omeka_tags: ${{ env.omeka_tags }}
         run: |
+          # Annotated tags carry their own creation date, so the release shows
+          # when it was actually cut (Omeka S release day) instead of inheriting
+          # the date of whatever commit main happens to point at.
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
           PROCESSED=0
 
           for tag in $omeka_tags; do
@@ -47,7 +53,7 @@ jobs:
             fi
 
             echo "Creating new tag: $tag"
-            git tag "$tag"
+            git tag -a "$tag" -m "Omeka S $tag"
             git push origin "$tag"
 
             echo "Triggering build for tag $tag"
