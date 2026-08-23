@@ -1,12 +1,6 @@
 #!/bin/sh
 set -eu
 
-# Check for required tools
-if ! command -v jq >/dev/null 2>&1; then
-    echo "ERROR: jq is required but not installed." >&2
-    exit 1
-fi
-
 # --- Functions ---
 
 check_db_availability() {
@@ -37,6 +31,7 @@ configure_database_ini() {
         } > "$config_file"
     else
         echo "No database env vars found. Skipping database.ini generation."
+        return
     fi
 
     chmod 600 "$config_file"
@@ -45,25 +40,24 @@ configure_database_ini() {
 
 install_items_from_names() {
     local kind="$1"
-    local env_var="$2"
-    local names
+    local names="$2"
 
-    names=$(eval "echo \${$env_var:-}")
     [ -z "$names" ] && echo "No $kind to install. Skipping." && return
 
     for name in $names; do
         [ -z "$name" ] && continue
         echo "Processing $name..."
-        if omeka-s-cli "${kind%s}:download" "$name"; then
-            if [ "$kind" = "modules" ]; then
-                if omeka-s-cli "${kind%s}:install" "$name"; then
-                    echo "$kind installed successfully: $name"
-                else
-                    echo "ERROR: Failed to install $kind: $name" >&2
-                fi
+
+        if [ "$kind" = "modules" ]; then
+            if omeka-s-cli module:download "$name" --install; then
+                echo "Module installed successfully: $name"
+            else
+                echo "ERROR: Failed to download and install module: $name" >&2
             fi
+        elif omeka-s-cli theme:download "$name"; then
+            echo "Theme downloaded successfully: $name"
         else
-            echo "ERROR: Failed to download $kind: $name" >&2
+            echo "ERROR: Failed to download theme: $name" >&2
         fi
     done
 }
@@ -76,23 +70,28 @@ ensure_module() {
         return 0
     fi
     echo "Installing module: $name"
-    omeka-s-cli module:download "$name" && omeka-s-cli module:install "$name"
+    omeka-s-cli module:download "$name" --install
 }
 
 # Install Omeka S only if required environment variables are set and not empty
 install_omeka() {
     [ -z "${OMEKA_ADMIN_EMAIL:-}" ] && return
-    [ -z "${OMEKA_ADMIN_NAME:-}" ] && return
     [ -z "${OMEKA_ADMIN_PASSWORD:-}" ] && return
     [ -z "${OMEKA_SITE_TITLE:-}" ] && return
 
+    if omeka-s-cli core:status --is-installed; then
+        echo "Omeka S is already installed."
+        return
+    fi
+
     echo "Installing Omeka S via CLI..."
-    local cmd="php install_cli.php --email=\"$OMEKA_ADMIN_EMAIL\" --name=\"$OMEKA_ADMIN_NAME\" --password=\"$OMEKA_ADMIN_PASSWORD\" --title=\"$OMEKA_SITE_TITLE\""
-
-    [ -n "${OMEKA_TIMEZONE:-}" ] && cmd="$cmd --timezone=\"$OMEKA_TIMEZONE\""
-    [ -n "${OMEKA_LOCALE:-}" ] && cmd="$cmd --locale=\"$OMEKA_LOCALE\""
-
-    eval "$cmd"
+    omeka-s-cli core:install \
+        --admin-email "$OMEKA_ADMIN_EMAIL" \
+        --admin-name "${OMEKA_ADMIN_NAME:-Site Administrator}" \
+        --admin-password "$OMEKA_ADMIN_PASSWORD" \
+        --title "$OMEKA_SITE_TITLE" \
+        --time-zone "${OMEKA_TIMEZONE:-UTC}" \
+        --locale "${OMEKA_LOCALE:-en_US}"
 }
 
 # Automatically import data from a CSV file, if provided
@@ -134,8 +133,8 @@ configure_database_ini
 
 install_omeka
 
-install_items_from_names "themes" "OMEKA_THEMES"
-install_items_from_names "modules" "OMEKA_MODULES"
+install_items_from_names "themes" "${OMEKA_THEMES:-}"
+install_items_from_names "modules" "${OMEKA_MODULES:-}"
 
 import_from_csv
 
