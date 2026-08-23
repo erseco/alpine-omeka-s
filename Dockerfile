@@ -19,7 +19,8 @@ RUN apk add --no-cache \
 
 # Omeka S and Omeka-S-CLI version configuration
 ARG OMEKA_VERSION=develop
-ARG OMEKA_CLI_VERSION=0.14.0
+# renovate: datasource=github-releases depName=GhentCDH/Omeka-S-Cli
+ARG OMEKA_CLI_VERSION=0.14.1
 
 # Default environment variables
 ENV APPLICATION_ENV=production \
