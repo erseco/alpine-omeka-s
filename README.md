@@ -73,6 +73,15 @@ Once the container is running, Omeka S will be installed and accessible at `http
 
 You can configure the container using the following environment variables in your `docker-compose.yml` file.
 
+### Build Arguments
+
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `OMEKA_VERSION` | Omeka S tag to install, or `develop` for the development branch. | `develop` |
+| `OMEKA_CLI_VERSION` | Omeka-S-CLI release bundled in the image. | `0.14.1` |
+
+Pinning `OMEKA_CLI_VERSION` keeps image builds reproducible while still allowing explicit CLI upgrades.
+
 ### Omeka S Installation
 
 | Variable Name          | Description                                | Default      |

@@ -14,12 +14,13 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 # Install system dependencies as root
 USER root
 RUN apk add --no-cache \
-    unzip wget jq ghostscript poppler-utils imagemagick \
-    netcat-openbsd php84-pecl-imagick php84-xsl php84-intl php84-xmlwriter composer \
-    && rm -rf /var/cache/apk/*
+    unzip ghostscript poppler-utils imagemagick \
+    netcat-openbsd php84-pecl-imagick php84-xsl php84-intl php84-xmlwriter composer
 
-# Omeka S version configuration
+# Omeka S and Omeka-S-CLI version configuration
 ARG OMEKA_VERSION=develop
+# renovate: datasource=github-releases depName=GhentCDH/Omeka-S-Cli
+ARG OMEKA_CLI_VERSION=0.14.1
 
 # Default environment variables
 ENV APPLICATION_ENV=production \
@@ -31,8 +32,7 @@ ENV APPLICATION_ENV=production \
     HOME=/tmp
 
 # Install Omeka-S-CLI
-ADD https://github.com/GhentCDH/Omeka-S-Cli/releases/latest/download/omeka-s-cli.phar /usr/local/bin/omeka-s-cli
-RUN chmod +x /usr/local/bin/omeka-s-cli
+ADD --chmod=0755 https://github.com/GhentCDH/Omeka-S-Cli/releases/download/v${OMEKA_CLI_VERSION}/omeka-s-cli.phar /usr/local/bin/omeka-s-cli
 
 # Set working directory
 WORKDIR /var/www/html
@@ -65,7 +65,7 @@ RUN set -x && \
     ln -s volume/logs . && \
     \
     # 4. Set final permissions
-    chown -R nobody:nobody volume . /usr/local/bin/omeka-s-cli
+    chown -R nobody:nobody volume .
 
 # Copy custom entrypoint scripts
 COPY --chown=nobody rootfs/ /
