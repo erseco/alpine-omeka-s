@@ -78,7 +78,7 @@ You can configure the container using the following environment variables in you
 | Argument | Description | Default |
 |----------|-------------|---------|
 | `OMEKA_VERSION` | Omeka S tag to install, or `develop` for the development branch. | `develop` |
-| `OMEKA_CLI_VERSION` | Omeka-S-CLI release bundled in the image. | `0.14.0` |
+| `OMEKA_CLI_VERSION` | Omeka-S-CLI release bundled in the image. | `0.14.1` |
 
 Pinning `OMEKA_CLI_VERSION` keeps image builds reproducible while still allowing explicit CLI upgrades.
 
