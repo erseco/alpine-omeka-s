@@ -151,6 +151,8 @@ volumes:
 | PRE_CONFIGURE_COMMANDS      | Commands to run before starting the configuration |         |
 | POST_CONFIGURE_COMMANDS     | Commands to run after finishing the configuration |         |
 
+`jq` is available in both hooks, for example to parse `omeka-s-cli ... --json` output.
+
 
 ## Advanced Features
 

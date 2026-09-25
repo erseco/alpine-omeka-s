@@ -14,7 +14,7 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 # Install system dependencies as root
 USER root
 RUN apk add --no-cache \
-    unzip ghostscript poppler-utils imagemagick \
+    unzip jq ghostscript poppler-utils imagemagick \
     netcat-openbsd php84-pecl-imagick php84-xsl php84-intl php84-xmlwriter composer
 
 # Omeka S and Omeka-S-CLI version configuration
