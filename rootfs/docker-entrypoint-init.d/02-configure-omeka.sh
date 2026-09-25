@@ -94,6 +94,25 @@ install_omeka() {
         --locale "${OMEKA_LOCALE:-en_US}"
 }
 
+# Apply an Omeka S blueprint (https://github.com/omeka-s-contrib/omeka-s-blueprints)
+# with omeka-s-cli. Deploy is idempotent, so it runs on every start. The core is
+# installed by install_omeka; the blueprint is applied on top of it.
+apply_blueprint() {
+    [ -z "${OMEKA_BLUEPRINT:-}" ] && return
+
+    if ! omeka-s-cli 2>/dev/null | grep -q 'blueprint:deploy'; then
+        echo "ERROR: OMEKA_BLUEPRINT is set but this omeka-s-cli has no blueprint:deploy command." >&2
+        return 1
+    fi
+    if ! omeka-s-cli core:status --is-installed; then
+        echo "ERROR: OMEKA_BLUEPRINT needs an installed Omeka S; set OMEKA_ADMIN_EMAIL, OMEKA_ADMIN_PASSWORD and OMEKA_SITE_TITLE." >&2
+        return 1
+    fi
+
+    echo "Applying blueprint: $OMEKA_BLUEPRINT"
+    omeka-s-cli blueprint:deploy "$OMEKA_BLUEPRINT" --skip core --force
+}
+
 # Automatically import data from a CSV file, if provided
 import_from_csv() {
     [ -z "${OMEKA_CSV_IMPORT_FILE:-}" ] && return
@@ -132,6 +151,8 @@ fi
 configure_database_ini
 
 install_omeka
+
+apply_blueprint
 
 install_items_from_names "themes" "${OMEKA_THEMES:-}"
 install_items_from_names "modules" "${OMEKA_MODULES:-}"

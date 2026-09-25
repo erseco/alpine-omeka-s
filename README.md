@@ -95,6 +95,7 @@ Pinning `OMEKA_CLI_VERSION` keeps image builds reproducible while still allowing
 | `OMEKA_THEMES`         | List of theme names                        |              |
 | `OMEKA_MODULES`        | List of module names                       |              |
 | `OMEKA_CSV_IMPORT_FILE`| Path to a CSV file for initial data import.| `null`       |
+| `OMEKA_BLUEPRINT`      | Path or URL of an [Omeka S blueprint](#omeka-s-blueprints) to apply at startup. | `null` |
 
 **Note:** The Omeka S installation will only run if `OMEKA_ADMIN_EMAIL`, `OMEKA_ADMIN_PASSWORD`, and `OMEKA_SITE_TITLE` are all set.
 
@@ -195,6 +196,40 @@ environment:
   OMEKA_THEMES: "default"
   OMEKA_MODULES: "Common EasyAdmin"
 ```
+
+### Omeka S Blueprints
+
+> [!WARNING]
+> Experimental. Requires an `omeka-s-cli` release with the `blueprint:deploy` command (not released yet).
+
+A blueprint is a declarative JSON file describing modules, themes, vocabularies, resource templates, settings and users, following the shared [Omeka S blueprint specification](https://github.com/omeka-s-contrib/omeka-s-blueprints). The same file can be used with [Omeka S Playground](https://github.com/ateeducacion/omeka-s-playground).
+
+Set `OMEKA_BLUEPRINT` to a path inside the container or a URL:
+
+```yaml
+environment:
+  OMEKA_BLUEPRINT: /blueprint.json
+volumes:
+  - ./blueprint.json:/blueprint.json:ro
+```
+
+See [`examples/blueprint.json`](examples/blueprint.json):
+
+```json
+{
+  "modules": [{ "name": "Common", "state": "activate" }],
+  "settings": { "installation_title": "Omeka S Blueprint Site" }
+}
+```
+
+How it works:
+
+- Omeka S is installed first from the `OMEKA_*` installation variables, which are required. The blueprint is then applied on top with `omeka-s-cli blueprint:deploy --skip core --force`.
+- It runs on every start. Deploy is idempotent: existing modules, themes and users are skipped, and settings are re-applied.
+- It runs before `OMEKA_THEMES`, `OMEKA_MODULES` and `OMEKA_CSV_IMPORT_FILE`, which keep working.
+- If the blueprint fails, the container stops.
+- Sites, items and item sets are not applied yet (Omeka-S-Cli focuses on configuration). Playground-only fields such as `login` or `landingPage` are ignored.
+- Blueprints may contain passwords (`users[].password`). Do not commit production credentials; create those users out of band instead.
 
 ### Advanced Management with `omeka-s-cli`
 
