@@ -109,6 +109,7 @@ Pinning `OMEKA_CLI_VERSION` keeps image builds reproducible while still allowing
 | `OMEKA_CSV_IMPORT_FILE`| Path to a CSV file for initial data import.| `null`       |
 | `OMEKA_BLUEPRINT`      | Path or URL of an [Omeka S blueprint](#omeka-s-blueprints) to apply at startup. | `null` |
 | `OMEKA_BLUEPRINT_ON_ERROR` | What to do when the blueprint cannot be applied: `abort` (stop the container) or `warn` (log a warning and keep starting). | `abort` |
+| `OMEKA_BLUEPRINT_SKIP` | Comma-separated blueprint phases not to apply, besides `core` (`modules`, `themes`, `files`, `vocabularies`, `resourceTemplates`, `users`, `settings`). E.g. `files` in a dev stack whose module builds those files locally. | (none) |
 
 **Note:** The Omeka S installation will only run if `OMEKA_ADMIN_EMAIL`, `OMEKA_ADMIN_PASSWORD`, and `OMEKA_SITE_TITLE` are all set.
 
