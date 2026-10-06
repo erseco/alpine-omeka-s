@@ -108,7 +108,8 @@ deploy_blueprint() {
     fi
 
     echo "Applying blueprint: $OMEKA_BLUEPRINT"
-    omeka-s-cli blueprint:deploy "$OMEKA_BLUEPRINT" --skip core --force
+    # core is installed from the OMEKA_* variables; OMEKA_BLUEPRINT_SKIP adds more phases
+    omeka-s-cli blueprint:deploy "$OMEKA_BLUEPRINT" --skip "core${OMEKA_BLUEPRINT_SKIP:+,$OMEKA_BLUEPRINT_SKIP}" --force
 }
 
 # Any blueprint failure follows OMEKA_BLUEPRINT_ON_ERROR (as in alpine-moodle):
