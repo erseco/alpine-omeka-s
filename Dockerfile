@@ -1,6 +1,7 @@
 # Base image using alpine-php-webserver
 ARG ARCH=
-FROM ${ARCH}erseco/alpine-php-webserver:3.23.0
+# 4.1.x branch: Omeka S 4.1 needs PHP 8.3, the last base image line with it (Alpine 3.20)
+FROM ${ARCH}erseco/alpine-php-webserver:3.20.11
 
 LABEL maintainer="Ernesto Serrano <info@ernesto.es>"
 
@@ -15,10 +16,10 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 USER root
 RUN apk add --no-cache \
     unzip jq ghostscript poppler-utils imagemagick \
-    netcat-openbsd php84-pecl-imagick php84-xsl php84-intl php84-xmlwriter composer
+    netcat-openbsd php83-pecl-imagick php83-xsl php83-intl php83-xmlwriter composer
 
 # Omeka S and Omeka-S-CLI version configuration
-ARG OMEKA_VERSION=develop
+ARG OMEKA_VERSION=v4.1.1
 # renovate: datasource=github-releases depName=GhentCDH/Omeka-S-Cli
 ARG OMEKA_CLI_VERSION=0.17.1
 # sha256 of that release's omeka-s-cli.phar (its asset digest on GitHub)

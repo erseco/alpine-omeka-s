@@ -1,30 +1,17 @@
 name: buildx
 
+# 4.1.x branch: Omeka S 4.1 on PHP 8.3, published as the `4.1` tag. main builds
+# develop and 4.2+ (PHP 8.4); this branch is kept apart until 4.1 support ends.
 on:
   push:
-    tags:
-      - 'v*'
     branches:
-      - main
+      - 4.1.x
   pull_request:
+    branches:
+      - 4.1.x
   workflow_dispatch:
-    inputs:
-      # Sent by check-omeka-s-version.yml, which dispatches on the new tag:
-      # the version is taken from that tag.
-      omeka_version:
-        description: 'Omeka version tag'
-        required: true
-
-env:
-  # Oldest Omeka S minor version still built from main
-  MIN_MINOR: '4.2'
 
 jobs:
-  # Omeka S versions to build and the image tags of each:
-  # - main, PRs and manual runs: develop (develop, main, beta) and the newest
-  #   patch of each minor from MIN_MINOR on (4.2 + latest, 4.1, ...), so every
-  #   image gets the changes of this commit.
-  # - a vX.Y.Z tag: that version, the only build that publishes vX.Y.Z.
   versions:
     runs-on: ubuntu-latest
     outputs:
@@ -32,38 +19,7 @@ jobs:
     steps:
       - name: Omeka S versions
         id: matrix
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -eu
-          # Released Omeka S versions, highest first (v4.2.1, v4.2.0, v4.1.1, ...)
-          releases=$(gh api 'repos/omeka/omeka-s/tags?per_page=100' --paginate --jq '.[].name' \
-            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -rV)
-          newest_minor=$(echo "$releases" | head -n 1 | sed -E 's/^v([0-9]+\.[0-9]+).*/\1/')
-
-          # floating image tags of a release: X.Y, plus latest for the newest minor
-          floating_tags() {
-            minor=$(echo "$1" | sed -E 's/^v([0-9]+\.[0-9]+).*/\1/')
-            if [ "$minor" = "$newest_minor" ]; then echo "$minor,latest"; else echo "$minor"; fi
-          }
-
-          if [ "$GITHUB_REF_TYPE" = tag ]; then
-            matrix=$(jq -nc --arg v "$GITHUB_REF_NAME" --arg t "$GITHUB_REF_NAME,$(floating_tags "$GITHUB_REF_NAME")" \
-              '[{omeka: $v, tags: $t}]')
-          else
-            matrix=$({
-              jq -nc '{omeka: "develop", tags: "develop,main,beta"}'
-              for minor in $(echo "$releases" | sed -E 's/^v([0-9]+\.[0-9]+).*/\1/' | uniq); do
-                if [ "$(printf '%s\n%s\n' "$MIN_MINOR" "$minor" | sort -V | head -n 1)" != "$MIN_MINOR" ]; then
-                  continue
-                fi
-                v=$(echo "$releases" | grep -m 1 -F "v$minor.")
-                jq -nc --arg v "$v" --arg t "$(floating_tags "$v")" '{omeka: $v, tags: $t}'
-              done
-            } | jq -sc .)
-          fi
-          echo "$matrix" | jq .
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+        run: echo 'matrix=[{"omeka":"v4.1.1","tags":"4.1"}]' >> "$GITHUB_OUTPUT"
 
   buildx:
     needs: versions
@@ -178,12 +134,3 @@ jobs:
           format: 'table'
           exit-code: '0'
           severity: 'CRITICAL,HIGH'
-
-      # Step 11: Update Docker Hub Description
-      - name: Docker Hub Description
-        if: github.event_name == 'push' && strategy.job-index == 0
-        uses: peter-evans/dockerhub-description@v5
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          short-description: ${{ github.event.repository.description }}
