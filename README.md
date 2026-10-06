@@ -16,6 +16,7 @@ Repository: https://github.com/erseco/alpine-omeka-s
 - **Multi-Arch Support:** `amd64`, `arm/v6`, `arm/v7`, `arm64`, `ppc64le`, `s390x`.
 - **Configurable:** Easily configure the container using environment variables.
 - **Extensible:** Automatically install themes and modules on startup.
+- **SQLite (experimental):** Run Omeka S in a single container, without a database service, for development, demos and CI.
 - **Simple & Transparent:** Follows the KISS principle for easy understanding and customization.
 
 ## Usage
@@ -146,6 +147,8 @@ volumes:
 | `DB_PASSWORD`   | Database password.            | `null`    |
 | `DB_NAME`       | Database name.                | `null`    |
 | `DB_PORT`       | Database port.                | `3306`    |
+| `DB_DRIVER`     | `pdo_sqlite` for [SQLite (experimental)](#sqlite-experimental); MySQL/MariaDB otherwise. | `null` |
+| `DB_SQLITE_PATH` | SQLite database file, inside `/var/www/html/volume`. | `/var/www/html/volume/db/omeka.db` |
 
 ### PHP & Webserver
 
@@ -247,6 +250,42 @@ How it works:
 - `omeka-s-cli` applies modules, themes, files, vocabularies, resource templates, users and settings. It validates but does not apply `sites`, `items` and `itemSets`, and it ignores `users[].settings`.
 - Playground-only fields (`login`, `landingPage`, `debug`, `phpConstants`) go under `x-playground`, which the container ignores.
 - Blueprints may contain passwords (`users[].password`). Do not commit production credentials; create those users out of band instead.
+
+### SQLite (experimental)
+
+> [!WARNING]
+> For development, demos and CI only. Do not run production sites on SQLite: Omeka S supports only MySQL and MariaDB, and SQLite allows a single writer at a time.
+
+With `DB_DRIVER: pdo_sqlite`, Omeka S stores its data in a SQLite file in the volume, so the `omeka-s` container is all you need:
+
+```yaml
+services:
+  omeka-s:
+    image: erseco/alpine-omeka-s:4.2
+    ports:
+      - "8080:8080"
+    environment:
+      OMEKA_ADMIN_EMAIL: admin@example.com
+      OMEKA_ADMIN_PASSWORD: PLEASE_CHANGEME
+      OMEKA_SITE_TITLE: "Omeka S SQLite Demo"
+      DB_DRIVER: pdo_sqlite
+    volumes:
+      - omeka_data:/var/www/html/volume
+
+volumes:
+  omeka_data:
+```
+
+How it works:
+
+- Omeka S has no SQLite support of its own. The image downloads the official Omeka S release, as usual, and patches it at build time with the SQLite support of the [ateeducacion/omeka-s](https://github.com/ateeducacion/omeka-s) fork, as [alpine-moodle](https://github.com/erseco/alpine-moodle/blob/main/docs/sqlite.md) does (see [`scripts/apply-sqlite-support.sh`](scripts/apply-sqlite-support.sh)): `develop` with [PR #2](https://github.com/ateeducacion/omeka-s/pull/2), 4.2.x with [PR #5](https://github.com/ateeducacion/omeka-s/pull/5) and 4.1.x with [PR #4](https://github.com/ateeducacion/omeka-s/pull/4). Older versions have no SQLite, and the container stops if `DB_DRIVER=pdo_sqlite` is set on them. MySQL and MariaDB keep working as before on the patched images.
+- At startup, the container does not wait for `DB_HOST`. It writes a `database.ini` with `driver = "pdo_sqlite"` and the `DB_SQLITE_PATH` file, and installs Omeka S into it. The file must be inside `/var/www/html/volume`, so it survives the container.
+- `OMEKA_THEMES`, `OMEKA_MODULES` and `OMEKA_CSV_IMPORT_FILE` work as usual. Modules that run MySQL-specific SQL may fail to install.
+
+Limitations:
+
+- `OMEKA_BLUEPRINT` does not work yet: the bundled `omeka-s-cli` connects to MySQL to check the installation, and fails with `The database name is required.`
+- There is no migration between SQLite and MySQL/MariaDB.
 
 ### Advanced Management with `omeka-s-cli`
 
