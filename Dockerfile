@@ -15,7 +15,8 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 USER root
 RUN apk add --no-cache \
     unzip jq ghostscript poppler-utils imagemagick \
-    netcat-openbsd php84-pecl-imagick php84-xsl php84-intl php84-xmlwriter composer
+    netcat-openbsd php84-pecl-imagick php84-xsl php84-intl php84-xmlwriter composer \
+    patch php84-pdo_sqlite
 
 # Omeka S and Omeka-S-CLI version configuration
 ARG OMEKA_VERSION=develop
@@ -40,7 +41,8 @@ ADD --chmod=0755 --checksum=sha256:${OMEKA_CLI_SHA256} https://github.com/GhentC
 WORKDIR /var/www/html
 
 # Download, extract, and configure Omeka S in a single layer
-RUN set -x && \
+RUN --mount=type=bind,source=scripts/apply-sqlite-support.sh,target=/tmp/apply-sqlite-support.sh \
+    set -x && \
     \
     # 1. Download and extract Omeka S
     if [ "$OMEKA_VERSION" = "develop" ]; then \
@@ -50,6 +52,8 @@ RUN set -x && \
     fi && \
     echo "Downloading Omeka S from: $OMEKA_S_URL" && \
     curl -L "$OMEKA_S_URL" | tar xz --strip-components=1 -C . && \
+    # Experimental SQLite support, before composer install (it changes composer.json)
+    sh /tmp/apply-sqlite-support.sh "$OMEKA_VERSION" && \
     \
     # 2. Create the volume structure for persistent data
     mkdir -p volume/config \
