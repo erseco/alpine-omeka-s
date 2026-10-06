@@ -1,7 +1,10 @@
 ---
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        OMEKA_VERSION: ${OMEKA_VERSION:-develop}
     environment:
       SITE_URL: http://app:8080
       DB_HOST: mariadb

@@ -69,6 +69,17 @@ docker compose up
 ```
 Once the container is running, Omeka S will be installed and accessible at `http://localhost:8080`.
 
+### Image tags
+
+| Tag | Omeka S | Updated |
+|-----|---------|---------|
+| `latest`, `4.2` | newest 4.2.x release | on every push to `main` |
+| `4.1` | 4.1.1, on PHP 8.3 | from the `4.1.x` branch, which is kept apart until 4.1 support ends |
+| `develop`, `main`, `beta` | `develop` branch (next minor) | on every push to `main` |
+| `v4.2.1`, … | that exact release | once, when Omeka S publishes it |
+
+Use a minor tag (`4.2`) to get the image fixes and features as they land, or a `vX.Y.Z` tag to pin a build.
+
 ## Configuration
 
 You can configure the container using the following environment variables in your `docker-compose.yml` file.
@@ -78,9 +89,10 @@ You can configure the container using the following environment variables in you
 | Argument | Description | Default |
 |----------|-------------|---------|
 | `OMEKA_VERSION` | Omeka S tag to install, or `develop` for the development branch. | `develop` |
-| `OMEKA_CLI_VERSION` | Omeka-S-CLI release bundled in the image. | `0.14.1` |
+| `OMEKA_CLI_VERSION` | Omeka-S-CLI release bundled in the image. | `0.17.1` |
+| `OMEKA_CLI_SHA256` | sha256 of that release's `omeka-s-cli.phar`; the build fails if it does not match. | digest of `0.17.1` |
 
-Pinning `OMEKA_CLI_VERSION` keeps image builds reproducible while still allowing explicit CLI upgrades.
+Pinning `OMEKA_CLI_VERSION` keeps image builds reproducible while still allowing explicit CLI upgrades (update `OMEKA_CLI_SHA256` with it).
 
 ### Omeka S Installation
 
