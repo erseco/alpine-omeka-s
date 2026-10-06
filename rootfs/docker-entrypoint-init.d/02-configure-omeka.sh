@@ -148,11 +148,21 @@ import_from_csv() {
         return
     fi
 
+    # Import each file once: the volume keeps a marker named after its checksum,
+    # so a restart does not duplicate the items and a changed file is imported.
+    local marker
+    marker="/var/www/html/volume/.csv-imported-$(sha256sum "$OMEKA_CSV_IMPORT_FILE" | cut -d ' ' -f 1)"
+    if [ -f "$marker" ]; then
+        echo "CSV already imported: $OMEKA_CSV_IMPORT_FILE. Skipping."
+        return
+    fi
+
     # Ensure the CSVImport module is installed
     ensure_module "CSVImport"
 
     echo "Starting CSV import from $OMEKA_CSV_IMPORT_FILE..."
     if php import_cli.php "$OMEKA_CSV_IMPORT_FILE"; then
+        touch "$marker"
         echo "CSV import completed successfully."
     else
         echo "WARNING: CSV import failed. Please check the logs for details."
