@@ -9,32 +9,91 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      # Sent by check-omeka-s-version.yml, which dispatches on the new tag:
+      # the version is taken from that tag.
       omeka_version:
         description: 'Omeka version tag'
         required: true
 
+env:
+  # Oldest Omeka S minor version still built from main
+  MIN_MINOR: '4.2'
+
 jobs:
-  buildx:
+  # Omeka S versions to build and the image tags of each:
+  # - main, PRs and manual runs: develop (develop, main, beta) and the newest
+  #   patch of each minor from MIN_MINOR on (4.2 + latest, 4.1, ...), so every
+  #   image gets the changes of this commit.
+  # - a vX.Y.Z tag: that version, the only build that publishes vX.Y.Z.
+  versions:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Omeka S versions
+        id: matrix
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          # Released Omeka S versions, highest first (v4.2.1, v4.2.0, v4.1.1, ...)
+          releases=$(gh api 'repos/omeka/omeka-s/tags?per_page=100' --paginate --jq '.[].name' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -rV)
+          newest_minor=$(echo "$releases" | head -n 1 | sed -E 's/^v([0-9]+\.[0-9]+).*/\1/')
+
+          # floating image tags of a release: X.Y, plus latest for the newest minor
+          floating_tags() {
+            minor=$(echo "$1" | sed -E 's/^v([0-9]+\.[0-9]+).*/\1/')
+            if [ "$minor" = "$newest_minor" ]; then echo "$minor,latest"; else echo "$minor"; fi
+          }
+
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            matrix=$(jq -nc --arg v "$GITHUB_REF_NAME" --arg t "$GITHUB_REF_NAME,$(floating_tags "$GITHUB_REF_NAME")" \
+              '[{omeka: $v, tags: $t}]')
+          else
+            matrix=$({
+              jq -nc '{omeka: "develop", tags: "develop,main,beta"}'
+              for minor in $(echo "$releases" | sed -E 's/^v([0-9]+\.[0-9]+).*/\1/' | uniq); do
+                if [ "$(printf '%s\n%s\n' "$MIN_MINOR" "$minor" | sort -V | head -n 1)" != "$MIN_MINOR" ]; then
+                  continue
+                fi
+                v=$(echo "$releases" | grep -m 1 -F "v$minor.")
+                jq -nc --arg v "$v" --arg t "$(floating_tags "$v")" '{omeka: $v, tags: $t}'
+              done
+            } | jq -sc .)
+          fi
+          echo "$matrix" | jq .
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  buildx:
+    needs: versions
+    runs-on: ubuntu-latest
+    name: buildx (${{ matrix.omeka }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.versions.outputs.matrix) }}
     steps:
       # Step 1: Checkout the code
       - name: Checkout
         uses: actions/checkout@v7
 
-      # Step 2: Extract metadata for Docker
-      - name: Docker meta
+      # Step 2: Image names of this version, on Docker Hub and GHCR
+      - name: Docker tags
         id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: |
-            ${{ github.repository }}
-            ghcr.io/${{ github.repository }}
-          tags: |
-            type=ref,event=tag
-            type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
-            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=beta,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=develop,enable=${{ github.ref == 'refs/heads/main' }}
+        env:
+          TAGS: ${{ matrix.tags }}
+          IMAGE: ${{ github.repository }}
+        run: |
+          {
+            echo 'tags<<EOF'
+            for tag in ${TAGS//,/ }; do
+              echo "$IMAGE:$tag"
+              echo "ghcr.io/$IMAGE:$tag"
+            done
+            echo 'EOF'
+            echo "first=ghcr.io/$IMAGE:${TAGS%%,*}"
+          } >> "$GITHUB_OUTPUT"
 
       # Step 3: Set up QEMU for multi-platform builds
       - name: Set up QEMU
@@ -66,8 +125,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 6: Lint Dockerfile
+      # Step 6: Lint Dockerfile (the same for every version, so only once)
       - name: Hadolint Action
+        if: strategy.job-index == 0
         uses: hadolint/hadolint-action@v3.5.0
         with:
           format: sarif
@@ -75,35 +135,27 @@ jobs:
           no-fail: true
 
       - name: Upload SARIF results
+        if: strategy.job-index == 0
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: hadolint-results.sarif
           category: hadolint-dockerfile
 
-      # Step 7: Determine Omeka S version
-      - name: Determine Omeka S version
-        id: omeka_version
-        run: |
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/}
-            echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          else
-            echo "version=develop" >> $GITHUB_OUTPUT
-          fi
-
-      # Step 8: Test build (for PRs)
+      # Step 7: Test build (for PRs)
       - name: Debug Build on PR
         if: github.event_name == 'pull_request'
         run: |
-          docker buildx build --load .
+          docker buildx build --load --build-arg OMEKA_VERSION=${{ matrix.omeka }} .
 
-      # Step 9: Test the built image
+      # Step 8: Test the built image
       - name: Test
+        env:
+          OMEKA_VERSION: ${{ matrix.omeka }}
         run: |
           docker compose version
           docker compose --file docker-compose.test.yml up --exit-code-from sut --timeout 10 --build
 
-      # Step 10: Build and Push to both registries in a single step
+      # Step 9: Build and Push to both registries in a single step
       - name: Build and push
         if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v7
@@ -113,23 +165,23 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/ppc64le,linux/s390x
           build-args: |
-            OMEKA_VERSION=${{ steps.omeka_version.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            OMEKA_VERSION=${{ matrix.omeka }}
+          cache-from: type=gha,scope=${{ matrix.omeka }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.omeka }}
 
-      # Step 11: Run Trivy vulnerability scanner
+      # Step 10: Run Trivy vulnerability scanner
       - name: Run Trivy vulnerability scanner
         if: github.event_name != 'pull_request'
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tags && steps.meta.outputs.tags[0] || 'main' }}
+          image-ref: ${{ steps.meta.outputs.first }}
           format: 'table'
           exit-code: '0'
           severity: 'CRITICAL,HIGH'
 
-      # Step 12: Update Docker Hub Description
+      # Step 11: Update Docker Hub Description
       - name: Docker Hub Description
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && strategy.job-index == 0
         uses: peter-evans/dockerhub-description@v5
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
