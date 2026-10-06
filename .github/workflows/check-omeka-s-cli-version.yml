@@ -9,7 +9,8 @@ jobs:
   bump:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -43,13 +44,13 @@ jobs:
                  -e "s/^ARG OMEKA_CLI_SHA256=.*/ARG OMEKA_CLI_SHA256=$sha256/" Dockerfile
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      # With GH_PAT instead of GITHUB_TOKEN, so that buildx builds and tests
-      # the PR (ADD --checksum checks the sha256) before it is merged
+      # Opened with GITHUB_TOKEN, so buildx does not run on the PR. It runs on
+      # the merge, and tests the image (ADD --checksum checks the sha256)
+      # before publishing it.
       - name: Open pull request
         if: steps.bump.outputs.version
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.GH_PAT }}
           base: ${{ matrix.branch }}
           branch: bump/omeka-s-cli-${{ matrix.branch }}
           commit-message: 'build: Omeka-S-Cli ${{ steps.bump.outputs.version }}'
@@ -58,4 +59,6 @@ jobs:
             Bumps `OMEKA_CLI_VERSION` to ${{ steps.bump.outputs.version }} and `OMEKA_CLI_SHA256` to the digest of its `omeka-s-cli.phar`.
 
             Release notes: https://github.com/GhentCDH/Omeka-S-Cli/releases/tag/v${{ steps.bump.outputs.version }}
+
+            Opened with `GITHUB_TOKEN`, so CI does not run here: buildx tests the image on the merge into `${{ matrix.branch }}` and publishes it only if the test passes. To test it before merging, close and reopen this PR.
           labels: dependencies
