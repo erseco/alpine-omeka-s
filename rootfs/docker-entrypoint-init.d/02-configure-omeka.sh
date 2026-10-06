@@ -17,7 +17,24 @@ check_db_availability() {
 configure_database_ini() {
     local config_file="/var/www/html/volume/config/database.ini"
 
-    if [ -n "${DB_USER:-}" ] || [ -n "${DB_PASSWORD:-}" ] || \
+    if [ "${DB_DRIVER:-}" = "pdo_sqlite" ]; then
+        # SQLite (experimental): a single file, in the volume so it survives the container
+        local db_path="${DB_SQLITE_PATH:-/var/www/html/volume/db/omeka.db}"
+        case "$db_path" in
+            /var/www/html/volume/?*) ;;
+            *) echo "ERROR: DB_SQLITE_PATH must be a file inside /var/www/html/volume: $db_path" >&2; return 1 ;;
+        esac
+        if [ ! -f /var/www/html/application/src/Db/Connection/SqliteCompatConnection.php ]; then
+            echo "ERROR: DB_DRIVER=pdo_sqlite, but this image's Omeka S has no SQLite support." >&2
+            return 1
+        fi
+        echo "Configuring $config_file for SQLite at $db_path..."
+        mkdir -p "$(dirname "$db_path")"
+        {
+            echo 'driver = "pdo_sqlite"'
+            echo "path   = \"$db_path\""
+        } > "$config_file"
+    elif [ -n "${DB_USER:-}" ] || [ -n "${DB_PASSWORD:-}" ] || \
        [ -n "${DB_NAME:-}" ] || [ -n "${DB_HOST:-}" ]; then
         echo "Configuring $config_file from environment variables..."
         {
@@ -174,7 +191,7 @@ import_from_csv() {
 
 echo "=== Omeka S Entrypoint start ==="
 
-[ -n "${DB_HOST:-}" ] && check_db_availability "$DB_HOST" "${DB_PORT:-3306}"
+[ -n "${DB_HOST:-}" ] && [ "${DB_DRIVER:-}" != "pdo_sqlite" ] && check_db_availability "$DB_HOST" "${DB_PORT:-3306}"
 
 # Execute pre-configure commands if the variable is set
 if [ -n "${PRE_CONFIGURE_COMMANDS:-}" ]; then

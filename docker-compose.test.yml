@@ -1,7 +1,7 @@
 ---
 services:
   app:
-    build:
+    build: &build
       context: .
       args:
         OMEKA_VERSION: ${OMEKA_VERSION:-develop}
@@ -25,6 +25,18 @@ services:
     depends_on:
       - mariadb
 
+  # The same image on SQLite (experimental), with no database service
+  app-sqlite:
+    build: *build
+    environment:
+      SITE_URL: http://app-sqlite:8080
+      DB_DRIVER: pdo_sqlite
+      OMEKA_ADMIN_EMAIL: admin@example.com
+      OMEKA_ADMIN_PASSWORD: PLEASE_CHANGEME
+      OMEKA_SITE_TITLE: "Omeka S SQLite Site"
+    volumes:
+      - sqlite_volume:/var/www/html/volume
+
   mariadb:
     image: mariadb:lts
     environment:
@@ -38,8 +50,13 @@ services:
     image: alpine:latest
     depends_on:
       - app
+      - app-sqlite
     environment:
       - SOURCE_BRANCH
     command: /tmp/run_tests.sh
     volumes:
       - "./run_tests.sh:/tmp/run_tests.sh:ro"
+      - "sqlite_volume:/sqlite:ro"
+
+volumes:
+  sqlite_volume:
