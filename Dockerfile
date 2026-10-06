@@ -78,4 +78,4 @@ USER nobody
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-HEALTHCHECK --interval=30s --timeout=5s --retries=10 CMD curl -fsS http://127.0.0.1:8080/ >/dev/null || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --retries=10 CMD ["/bin/sh", "-c", "curl -fsS http://127.0.0.1:8080/ >/dev/null || exit 1"]
