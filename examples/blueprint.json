@@ -1,0 +1,13 @@
+{
+    "$schema": "https://omeka-s-contrib.github.io/omeka-s-blueprints/schema/v0/blueprint-schema.json",
+    "meta": {
+        "title": "alpine-omeka-s example",
+        "description": "Installs a module and sets global settings on top of the container install."
+    },
+    "modules": [
+        { "name": "Common", "state": "activate" }
+    ],
+    "settings": {
+        "installation_title": "Omeka S Blueprint Site"
+    }
+}

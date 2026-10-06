@@ -20,7 +20,9 @@ RUN apk add --no-cache \
 # Omeka S and Omeka-S-CLI version configuration
 ARG OMEKA_VERSION=develop
 # renovate: datasource=github-releases depName=GhentCDH/Omeka-S-Cli
-ARG OMEKA_CLI_VERSION=0.14.1
+ARG OMEKA_CLI_VERSION=0.17.1
+# sha256 of that release's omeka-s-cli.phar (its asset digest on GitHub)
+ARG OMEKA_CLI_SHA256=dbca2b9200b2247d6f7fdf02c7125b847c17b03dd912d8fb52e33313eb69a80a
 
 # Default environment variables
 ENV APPLICATION_ENV=production \
@@ -32,7 +34,7 @@ ENV APPLICATION_ENV=production \
     HOME=/tmp
 
 # Install Omeka-S-CLI
-ADD --chmod=0755 https://github.com/GhentCDH/Omeka-S-Cli/releases/download/v${OMEKA_CLI_VERSION}/omeka-s-cli.phar /usr/local/bin/omeka-s-cli
+ADD --chmod=0755 --checksum=sha256:${OMEKA_CLI_SHA256} https://github.com/GhentCDH/Omeka-S-Cli/releases/download/v${OMEKA_CLI_VERSION}/omeka-s-cli.phar /usr/local/bin/omeka-s-cli
 
 # Set working directory
 WORKDIR /var/www/html

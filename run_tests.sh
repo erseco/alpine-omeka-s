@@ -12,4 +12,5 @@ echo "Omeka S is ready"
 # Give it another 3 seconds.
 sleep 3;
 
-curl --silent --fail http://app:8080 | grep 'Sites · Omeka S Sample Site'
+# The title comes from the blueprint's settings, applied after the install.
+curl --silent --fail http://app:8080 | grep 'Sites · Omeka S Blueprint Site'

@@ -16,7 +16,9 @@ services:
       OMEKA_MODULES: |
         Common
         EasyAdmin
-
+      OMEKA_BLUEPRINT: /blueprint.json
+    volumes:
+      - "./examples/blueprint.json:/blueprint.json:ro"
     depends_on:
       - mariadb
 
