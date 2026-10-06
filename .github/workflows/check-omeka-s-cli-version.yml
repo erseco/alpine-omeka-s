@@ -1,0 +1,61 @@
+name: Bump Omeka-S-Cli
+
+on:
+  schedule:
+    - cron: '0 1 * * *' # Daily
+  workflow_dispatch: # Allows manually triggering
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # Scheduled workflows only run on main, so main bumps the 4.1.x branch too
+        branch: [main, 4.1.x]
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.branch }}
+
+      # Latest Omeka-S-Cli release and the sha256 of its omeka-s-cli.phar,
+      # which GitHub publishes as the asset digest
+      - name: Update OMEKA_CLI_VERSION and OMEKA_CLI_SHA256
+        id: bump
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          release=$(gh release view -R GhentCDH/Omeka-S-Cli --json tagName,assets)
+          version=$(echo "$release" | jq -r '.tagName | ltrimstr("v")')
+          sha256=$(echo "$release" | jq -r '.assets[] | select(.name == "omeka-s-cli.phar") | .digest | ltrimstr("sha256:")')
+          current=$(sed -n 's/^ARG OMEKA_CLI_VERSION=//p' Dockerfile)
+          echo "Omeka-S-Cli $current in the Dockerfile, $version released"
+
+          if [ "$version" = "$current" ] || [ "$(printf '%s\n%s\n' "$current" "$version" | sort -V | tail -n 1)" != "$version" ]; then
+            exit 0
+          fi
+          echo "$sha256" | grep -Eqx '[0-9a-f]{64}' || { echo "omeka-s-cli.phar of $version has no sha256 digest"; exit 1; }
+          sed -i -e "s/^ARG OMEKA_CLI_VERSION=.*/ARG OMEKA_CLI_VERSION=$version/" \
+                 -e "s/^ARG OMEKA_CLI_SHA256=.*/ARG OMEKA_CLI_SHA256=$sha256/" Dockerfile
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # With GH_PAT instead of GITHUB_TOKEN, so that buildx builds and tests
+      # the PR (ADD --checksum checks the sha256) before it is merged
+      - name: Open pull request
+        if: steps.bump.outputs.version
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GH_PAT }}
+          base: ${{ matrix.branch }}
+          branch: bump/omeka-s-cli-${{ matrix.branch }}
+          commit-message: 'build: Omeka-S-Cli ${{ steps.bump.outputs.version }}'
+          title: 'build: Omeka-S-Cli ${{ steps.bump.outputs.version }} (${{ matrix.branch }})'
+          body: |
+            Bumps `OMEKA_CLI_VERSION` to ${{ steps.bump.outputs.version }} and `OMEKA_CLI_SHA256` to the digest of its `omeka-s-cli.phar`.
+
+            Release notes: https://github.com/GhentCDH/Omeka-S-Cli/releases/tag/v${{ steps.bump.outputs.version }}
+          labels: dependencies

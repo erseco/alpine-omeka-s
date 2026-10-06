@@ -19,7 +19,7 @@ RUN apk add --no-cache \
 
 # Omeka S and Omeka-S-CLI version configuration
 ARG OMEKA_VERSION=develop
-# renovate: datasource=github-releases depName=GhentCDH/Omeka-S-Cli
+# Omeka-S-Cli release, bumped by .github/workflows/check-omeka-s-cli-version.yml
 ARG OMEKA_CLI_VERSION=0.17.1
 # sha256 of that release's omeka-s-cli.phar (its asset digest on GitHub)
 ARG OMEKA_CLI_SHA256=dbca2b9200b2247d6f7fdf02c7125b847c17b03dd912d8fb52e33313eb69a80a
