@@ -217,9 +217,9 @@ environment:
 ### Omeka S Blueprints
 
 > [!WARNING]
-> Experimental. Requires an `omeka-s-cli` release with the `blueprint:deploy` command (not released yet).
+> Experimental. Applied with the `blueprint:deploy` command of the bundled `omeka-s-cli` (see `OMEKA_CLI_VERSION`).
 
-A blueprint is a declarative JSON file describing modules, themes, files, vocabularies, resource templates, users and settings, following the shared [Omeka S blueprint specification](https://github.com/omeka-s-contrib/omeka-s-blueprints). The same file can be used with [Omeka S Playground](https://github.com/ateeducacion/omeka-s-playground).
+A blueprint is a declarative JSON file describing modules, themes, files, vocabularies, resource templates, users, sites and settings, following the shared [Omeka S blueprint specification](https://github.com/omeka-s-contrib/omeka-s-blueprints). The same file can be used with [Omeka S Playground](https://github.com/ateeducacion/omeka-s-playground).
 
 Set `OMEKA_BLUEPRINT` to a path inside the container or a URL:
 
