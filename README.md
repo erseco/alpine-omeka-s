@@ -90,8 +90,8 @@ You can configure the container using the following environment variables in you
 | Argument | Description | Default |
 |----------|-------------|---------|
 | `OMEKA_VERSION` | Omeka S tag to install, or `develop` for the development branch. | `develop` |
-| `OMEKA_CLI_VERSION` | Omeka-S-CLI release bundled in the image. | `0.17.1` |
-| `OMEKA_CLI_SHA256` | sha256 of that release's `omeka-s-cli.phar`; the build fails if it does not match. | digest of `0.17.1` |
+| `OMEKA_CLI_VERSION` | Omeka-S-CLI release bundled in the image. | `0.18.0` |
+| `OMEKA_CLI_SHA256` | sha256 of that release's `omeka-s-cli.phar`; the build fails if it does not match. | digest of `0.18.0` |
 
 Pinning `OMEKA_CLI_VERSION` keeps image builds reproducible while still allowing explicit CLI upgrades (update `OMEKA_CLI_SHA256` with it).
 
