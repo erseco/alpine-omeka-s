@@ -42,6 +42,8 @@ jobs:
           echo "$sha256" | grep -Eqx '[0-9a-f]{64}' || { echo "omeka-s-cli.phar of $version has no sha256 digest"; exit 1; }
           sed -i -e "s/^ARG OMEKA_CLI_VERSION=.*/ARG OMEKA_CLI_VERSION=$version/" \
                  -e "s/^ARG OMEKA_CLI_SHA256=.*/ARG OMEKA_CLI_SHA256=$sha256/" Dockerfile
+          # The Build Arguments table in the README shows the bundled version
+          sed -i -E '/^\| `OMEKA_CLI_(VERSION|SHA256)` /s/`[0-9]+\.[0-9]+\.[0-9]+`/`'"$version"'`/' README.md
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       # Opened with GITHUB_TOKEN, so buildx does not run on the PR. It runs on
@@ -56,7 +58,7 @@ jobs:
           commit-message: 'build: Omeka-S-Cli ${{ steps.bump.outputs.version }}'
           title: 'build: Omeka-S-Cli ${{ steps.bump.outputs.version }} (${{ matrix.branch }})'
           body: |
-            Bumps `OMEKA_CLI_VERSION` to ${{ steps.bump.outputs.version }} and `OMEKA_CLI_SHA256` to the digest of its `omeka-s-cli.phar`.
+            Bumps `OMEKA_CLI_VERSION` to ${{ steps.bump.outputs.version }} and `OMEKA_CLI_SHA256` to the digest of its `omeka-s-cli.phar`, in the Dockerfile and the README.
 
             Release notes: https://github.com/GhentCDH/Omeka-S-Cli/releases/tag/v${{ steps.bump.outputs.version }}
 
