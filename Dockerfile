@@ -40,6 +40,11 @@ ADD --chmod=0755 --checksum=sha256:${OMEKA_CLI_SHA256} https://github.com/GhentC
 # Set working directory
 WORKDIR /var/www/html
 
+# Head commit of the ateeducacion/omeka-s PR applied by apply-sqlite-support.sh,
+# passed by the build workflow: a new commit invalidates the cached layer below,
+# which would otherwise keep an outdated patch.
+ARG SQLITE_SUPPORT_SHA=
+
 # Download, extract, and configure Omeka S in a single layer
 RUN --mount=type=bind,source=scripts/apply-sqlite-support.sh,target=/tmp/apply-sqlite-support.sh \
     set -x && \
@@ -53,6 +58,7 @@ RUN --mount=type=bind,source=scripts/apply-sqlite-support.sh,target=/tmp/apply-s
     echo "Downloading Omeka S from: $OMEKA_S_URL" && \
     curl -L "$OMEKA_S_URL" | tar xz --strip-components=1 -C . && \
     # Experimental SQLite support, before composer install (it changes composer.json)
+    echo "SQLite support PR head: ${SQLITE_SUPPORT_SHA:-unknown}" && \
     sh /tmp/apply-sqlite-support.sh "$OMEKA_VERSION" && \
     \
     # 2. Create the volume structure for persistent data
