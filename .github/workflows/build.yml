@@ -51,6 +51,22 @@ jobs:
             echo "first=ghcr.io/$IMAGE:${TAGS%%,*}"
           } >> "$GITHUB_OUTPUT"
 
+      # Step 2b: Head commit of the SQLite support PR, so a new commit there
+      # rebuilds the patched layer instead of reusing it from the GHA cache
+      - name: SQLite support revision
+        id: sqlite
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OMEKA_VERSION: ${{ matrix.omeka }}
+        run: |
+          pr=$(bash scripts/apply-sqlite-support.sh --pr "$OMEKA_VERSION")
+          sha=
+          if [ -n "$pr" ]; then
+            sha=$(gh api "repos/ateeducacion/omeka-s/pulls/$pr" --jq .head.sha)
+          fi
+          echo "PR: ${pr:-none}, head: ${sha:-none}"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
       # Step 3: Set up QEMU for multi-platform builds
       - name: Set up QEMU
         id: qemu
@@ -101,7 +117,8 @@ jobs:
       - name: Debug Build on PR
         if: github.event_name == 'pull_request'
         run: |
-          docker buildx build --load --build-arg OMEKA_VERSION=${{ matrix.omeka }} .
+          docker buildx build --load --build-arg OMEKA_VERSION=${{ matrix.omeka }} \
+            --build-arg SQLITE_SUPPORT_SHA=${{ steps.sqlite.outputs.sha }} .
 
       # Step 8: Test the built image
       - name: Test
@@ -122,6 +139,7 @@ jobs:
           platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/ppc64le,linux/s390x
           build-args: |
             OMEKA_VERSION=${{ matrix.omeka }}
+            SQLITE_SUPPORT_SHA=${{ steps.sqlite.outputs.sha }}
           cache-from: type=gha,scope=${{ matrix.omeka }}
           cache-to: type=gha,mode=max,scope=${{ matrix.omeka }}
 
