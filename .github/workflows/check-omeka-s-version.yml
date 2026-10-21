@@ -36,6 +36,7 @@ jobs:
       - name: Process missing tags
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ github.token }}
           omeka_tags: ${{ env.omeka_tags }}
         run: |
           # Annotated tags carry their own creation date, so the release shows
@@ -45,30 +46,36 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           PROCESSED=0
+          NEWEST=$(echo $omeka_tags | tr ' ' '\n' | tail -n 1)
 
           for tag in $omeka_tags; do
             if git rev-parse "$tag" >/dev/null 2>&1; then
               echo "Tag $tag already exists locally, skipping"
-              continue
+            else
+              echo "Creating new tag: $tag"
+              git tag -a "$tag" -m "Omeka S $tag"
+              git push origin "$tag"
+
+              echo "Triggering build for tag $tag"
+              curl -X POST \
+                -H "Accept: application/vnd.github.v3+json" \
+                -H "Authorization: token $GH_PAT" \
+                https://api.github.com/repos/${{ github.repository }}/actions/workflows/build.yml/dispatches \
+                -d '{
+                  "ref": "refs/tags/'"$tag"'",
+                  "inputs": {
+                    "omeka_version": "'"$tag"'"
+                  }
+                }'
+
+              PROCESSED=$((PROCESSED+1))
             fi
 
-            echo "Creating new tag: $tag"
-            git tag -a "$tag" -m "Omeka S $tag"
-            git push origin "$tag"
-
-            echo "Triggering build for tag $tag"
-            curl -X POST \
-              -H "Accept: application/vnd.github.v3+json" \
-              -H "Authorization: token $GH_PAT" \
-              https://api.github.com/repos/${{ github.repository }}/actions/workflows/build.yml/dispatches \
-              -d '{
-                "ref": "refs/tags/'"$tag"'",
-                "inputs": {
-                  "omeka_version": "'"$tag"'"
-                }
-              }'
-
-            PROCESSED=$((PROCESSED+1))
+            # A release per tag, also for the tags pushed before there were releases
+            if ! gh release view "$tag" >/dev/null 2>&1; then
+              gh release create "$tag" --title "$tag" --generate-notes \
+                "--latest=$([ "$tag" = "$NEWEST" ] && echo true || echo false)"
+            fi
           done
 
           echo "Process completed. Created $PROCESSED new tags."
