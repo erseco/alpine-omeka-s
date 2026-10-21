@@ -1,6 +1,6 @@
-# Base image using alpine-php-webserver
-ARG ARCH=
-FROM ${ARCH}erseco/alpine-php-webserver:3.23.6-1
+# Base image: PHP 8.4 on Alpine 3.24. Floating tag, so rebuilds pick up
+# alpine-php-webserver's PHP security releases (Alpine 3.23 lags on them).
+FROM ghcr.io/erseco/alpine-php-webserver:3.24-php84
 
 LABEL maintainer="Ernesto Serrano <info@ernesto.es>"
 
@@ -13,9 +13,12 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 # Install system dependencies as root
 USER root
+# Composer from the official image: Alpine 3.24's composer package depends on
+# php85 and would repoint /usr/bin/php.
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 RUN apk add --no-cache \
     unzip jq ghostscript poppler-utils imagemagick \
-    netcat-openbsd php84-pecl-imagick php84-xsl php84-intl php84-xmlwriter composer \
+    netcat-openbsd php84-pecl-imagick php84-xsl php84-intl php84-xmlwriter \
     patch php84-pdo_sqlite
 
 # Omeka S and Omeka-S-CLI version configuration
