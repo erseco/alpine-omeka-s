@@ -1,7 +1,6 @@
-# Base image using alpine-php-webserver
-ARG ARCH=
-# 4.1.x branch: Omeka S 4.1 needs PHP 8.3, the last base image line with it (Alpine 3.20)
-FROM ${ARCH}erseco/alpine-php-webserver:3.20.11
+# 4.1.x branch: Omeka S 4.1 needs PHP 8.3. alpine-php-webserver's -php83 variant
+# runs it on Alpine 3.24 (3.20 is EOL); the floating tag picks up PHP security releases.
+FROM ghcr.io/erseco/alpine-php-webserver:3.24-php83
 
 LABEL maintainer="Ernesto Serrano <info@ernesto.es>"
 
@@ -14,9 +13,12 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 # Install system dependencies as root
 USER root
+# Composer from the official image: Alpine 3.24's composer package depends on
+# php85 and would repoint /usr/bin/php.
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 RUN apk add --no-cache \
     unzip jq ghostscript poppler-utils imagemagick \
-    netcat-openbsd php83-pecl-imagick php83-xsl php83-intl php83-xmlwriter composer \
+    netcat-openbsd php83-pecl-imagick php83-xsl php83-intl php83-xmlwriter \
     patch php83-pdo_sqlite
 
 # Omeka S and Omeka-S-CLI version configuration
