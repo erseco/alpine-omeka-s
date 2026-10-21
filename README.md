@@ -81,6 +81,10 @@ Once the container is running, Omeka S will be installed and accessible at `http
 
 Use a minor tag (`4.2`) to get the image fixes and features as they land, or a `vX.Y.Z` tag to pin a build.
 
+<!-- tags:start -->
+See the [releases](https://github.com/erseco/alpine-omeka-s/releases) for the current list.
+<!-- tags:end -->
+
 ## Configuration
 
 You can configure the container using the following environment variables in your `docker-compose.yml` file.

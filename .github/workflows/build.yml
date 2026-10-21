@@ -74,9 +74,11 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.versions.outputs.matrix) }}
     steps:
-      # Step 1: Checkout the code
+      # Step 1: Checkout the code (with all tags, listed in the Docker Hub README)
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       # Step 2: Image names of this version, on Docker Hub and GHCR
       - name: Docker tags
@@ -197,11 +199,16 @@ jobs:
           exit-code: '0'
           severity: 'CRITICAL,HIGH'
 
-      # Step 11: Update Docker Hub Description
+      # Step 11: Update Docker Hub Description, with the list of image tags
+      - name: Generate Docker Hub README with the tag list
+        if: github.event_name != 'pull_request' && strategy.job-index == 0
+        run: git tag | sh scripts/dockerhub-readme.sh README.md > dockerhub-README.md
+
       - name: Docker Hub Description
-        if: github.event_name == 'push' && strategy.job-index == 0
+        if: github.event_name != 'pull_request' && strategy.job-index == 0
         uses: peter-evans/dockerhub-description@v5
         with:
+          readme-filepath: ./dockerhub-README.md
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           short-description: ${{ github.event.repository.description }}
