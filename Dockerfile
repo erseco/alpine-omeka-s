@@ -1,6 +1,6 @@
 # Base image using alpine-php-webserver
 ARG ARCH=
-FROM ${ARCH}erseco/alpine-php-webserver:3.23.0
+FROM ${ARCH}erseco/alpine-php-webserver:3.23.6-1
 
 LABEL maintainer="Ernesto Serrano <info@ernesto.es>"
 
