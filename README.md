@@ -76,7 +76,7 @@ Once the container is running, Omeka S will be installed and accessible at `http
 |-----|---------|---------|
 | `latest`, `4.2` | newest 4.2.x release | on every push to `main` |
 | `4.1` | 4.1.1, on PHP 8.3 | from the `4.1.x` branch, which is kept apart until 4.1 support ends |
-| `develop`, `main`, `beta` | `develop` branch (next minor) | on every push to `main` |
+| `develop`, `main`, `beta`, `4.3` | `develop` branch (next minor, tagged with its version until it is released) | on every push to `main` |
 | `v4.2.1`, … | that exact release | once, when Omeka S publishes it |
 
 Use a minor tag (`4.2`) to get the image fixes and features as they land, or a `vX.Y.Z` tag to pin a build.

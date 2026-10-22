@@ -22,7 +22,8 @@ env:
 
 jobs:
   # Omeka S versions to build and the image tags of each:
-  # - main, PRs and manual runs without omeka_version: develop (develop, main, beta) and the newest
+  # - main, PRs and manual runs without omeka_version: develop (develop, main,
+  #   beta and its unreleased minor, e.g. 4.3) and the newest
   #   patch of each minor from MIN_MINOR on (4.2 + latest, 4.1, ...), so every
   #   image gets the changes of this commit.
   # - a vX.Y.Z tag, or a manual run with omeka_version: that version, the only
@@ -31,6 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      develop-tags: ${{ steps.matrix.outputs.develop-tags }}
     steps:
       - name: Omeka S versions
         id: matrix
@@ -54,13 +56,22 @@ jobs:
             if [ "$minor" = "$newest_minor" ]; then echo "$minor,latest"; else echo "$minor"; fi
           }
 
+          # Image tags of develop, plus its minor (4.3.0-alpha -> 4.3) until that is released
+          develop_tags=develop,main,beta
+          develop_minor=$(gh api 'repos/omeka/omeka-s/contents/application/Module.php?ref=develop' --jq .content \
+            | base64 -d | sed -nE "s/.*const VERSION = '([0-9]+\.[0-9]+)\..*/\1/p")
+          if [ -n "$develop_minor" ] && ! echo "$releases" | grep -qF "v$develop_minor."; then
+            develop_tags="$develop_tags,$develop_minor"
+          fi
+          echo "develop-tags=$develop_tags" >> "$GITHUB_OUTPUT"
+
           if [ -n "$OMEKA_VERSION" ]; then
             echo "$releases" | grep -qxF "$OMEKA_VERSION" || { echo "Unknown Omeka S release: $OMEKA_VERSION"; exit 1; }
             matrix=$(jq -nc --arg v "$OMEKA_VERSION" --arg t "$OMEKA_VERSION,$(floating_tags "$OMEKA_VERSION")" \
               '[{omeka: $v, tags: $t}]')
           else
             matrix=$({
-              jq -nc '{omeka: "develop", tags: "develop,main,beta"}'
+              jq -nc --arg t "$develop_tags" '{omeka: "develop", tags: $t}'
               for minor in $(echo "$releases" | sed -E 's/^v([0-9]+\.[0-9]+).*/\1/' | uniq); do
                 if [ "$(printf '%s\n%s\n' "$MIN_MINOR" "$minor" | sort -V | head -n 1)" != "$MIN_MINOR" ]; then
                   continue
@@ -210,7 +221,9 @@ jobs:
       # Step 11: Update Docker Hub Description, with the list of image tags
       - name: Generate Docker Hub README with the tag list
         if: github.event_name != 'pull_request' && strategy.job-index == 0
-        run: git tag | sh scripts/dockerhub-readme.sh README.md > dockerhub-README.md
+        env:
+          DEVELOP_TAGS: ${{ needs.versions.outputs.develop-tags }}
+        run: git tag | sh scripts/dockerhub-readme.sh README.md "$DEVELOP_TAGS" > dockerhub-README.md
 
       - name: Docker Hub Description
         if: github.event_name != 'pull_request' && strategy.job-index == 0

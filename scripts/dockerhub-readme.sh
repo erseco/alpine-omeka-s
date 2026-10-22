@@ -1,8 +1,9 @@
 #!/bin/sh
 # Prints README.md with the list of image tags between <!-- tags:start --> and
 # <!-- tags:end -->: the newest vX.Y.Z of each minor with its floating tags.
-# Reads the published versions (one git tag per line) from stdin:
-#   git tag | sh scripts/dockerhub-readme.sh README.md > dockerhub-README.md
+# Reads the published versions (one git tag per line) from stdin, and takes
+# the tags of the develop image (comma separated) as the second argument:
+#   git tag | sh scripts/dockerhub-readme.sh README.md develop,main,beta,4.3 > dockerhub-README.md
 set -eu
 
 FLOATING_SINCE=v4.1 # older minors were only published as vX.Y.Z
@@ -20,5 +21,5 @@ for minor in $(echo "$versions" | cut -d. -f1,2 | uniq); do
     if [ "$minor" = "$newest" ]; then tags="$tags, \`latest\`"; fi
     echo "- $tags"
 done
-echo '- `develop`, `main`, `beta`'
+echo "${2:-develop,main,beta}" | sed 's/[^,]*/`&`/g; s/,/, /g; s/^/- /'
 sed -n '/<!-- tags:end -->/,$p' "$1"
