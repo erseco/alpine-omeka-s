@@ -24,10 +24,10 @@ jobs:
   # Omeka S versions to build and the image tags of each:
   # - main, PRs and manual runs without omeka_version: develop (develop, main,
   #   beta and its unreleased minor, e.g. 4.3) and the newest
-  #   patch of each minor from MIN_MINOR on (4.2 + latest, 4.1, ...), so every
-  #   image gets the changes of this commit.
-  # - a vX.Y.Z tag, or a manual run with omeka_version: that version, the only
-  #   build that publishes vX.Y.Z.
+  #   patch of each minor from MIN_MINOR on (v4.2.1 + 4.2 + latest, ...), so
+  #   every image gets the changes of this commit.
+  # - a vX.Y.Z tag, or a manual run with omeka_version: that version (vX.Y.Z,
+  #   plus its floating tags when it is the newest patch of its minor).
   versions:
     runs-on: ubuntu-latest
     outputs:
@@ -77,7 +77,7 @@ jobs:
                   continue
                 fi
                 v=$(echo "$releases" | grep -m 1 -F "v$minor.")
-                jq -nc --arg v "$v" --arg t "$(floating_tags "$v")" '{omeka: $v, tags: $t}'
+                jq -nc --arg v "$v" --arg t "$v,$(floating_tags "$v")" '{omeka: $v, tags: $t}'
               done
             } | jq -sc .)
           fi
