@@ -24,9 +24,9 @@ RUN apk add --no-cache \
 # Omeka S and Omeka-S-CLI version configuration
 ARG OMEKA_VERSION=develop
 # Omeka-S-Cli release, bumped by .github/workflows/check-omeka-s-cli-version.yml
-ARG OMEKA_CLI_VERSION=0.18.2
+ARG OMEKA_CLI_VERSION=0.19.0
 # sha256 of that release's omeka-s-cli.phar (its asset digest on GitHub)
-ARG OMEKA_CLI_SHA256=6f78582deed845071fd116fb985edb54f7bd7c40f8baa56d5ba9a61058cc0c00
+ARG OMEKA_CLI_SHA256=67dc278055921291757523f60fb79791635e6714435474842c0ea5260d600428
 
 # Default environment variables
 ENV APPLICATION_ENV=production \
