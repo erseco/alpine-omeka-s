@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: Omeka S versions
         id: matrix
-        run: echo 'matrix=[{"omeka":"v4.1.1","tags":"4.1"}]' >> "$GITHUB_OUTPUT"
+        run: echo 'matrix=[{"omeka":"v4.1.1","tags":"v4.1.1,4.1"}]' >> "$GITHUB_OUTPUT"
 
   buildx:
     needs: versions
